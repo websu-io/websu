@@ -1,0 +1,16 @@
+version: '3.0'
+services:
+  web:
+    build: .
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+    ports:
+    - "8000:8000"
+    links:
+    - mongo
+    cap_add:
+      - SYS_ADMIN
+  mongo:
+    image: mongo:4
+    ports: 
+      - "127.0.0.1:27017:27017"
