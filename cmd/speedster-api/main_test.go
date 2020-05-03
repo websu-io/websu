@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/reviewor-org/speedster/pkg/api"
 	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"net/http"
@@ -13,10 +14,10 @@ import (
 	"testing"
 )
 
-var a *App
+var a *api.App
 
 func TestMain(m *testing.M) {
-	a = NewApp("mongodb://localhost:27017")
+	a = api.NewApp("mongodb://localhost:27017")
 	code := m.Run()
 	os.Exit(code)
 }
@@ -66,7 +67,7 @@ func TestCreateGetandDeleteScan(t *testing.T) {
 	r := createScan()
 	checkResponseCode(t, http.StatusOK, r)
 
-	var scan Scan
+	var scan api.Scan
 	if err := json.NewDecoder(r.Body).Decode(&scan); err != nil {
 		t.Errorf("Error: %s. Json decoding body: %s\n", err, r.Body)
 	}

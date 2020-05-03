@@ -4,14 +4,14 @@ WORKDIR /go/src/github.com/reviewor-org/speedster
 COPY . .
 
 RUN go get -d -v ./...
-RUN go build -o /speedster
+RUN go build ./cmd/speedster-api && mv speedster-api /
 
 CMD ["app"]
 
 FROM justinribeiro/lighthouse
 
-COPY --from=builder /speedster /speedster
+COPY --from=builder /speedster-api /speedster-api
 
-ENTRYPOINT ["/speedster"]
+ENTRYPOINT ["/speedster-api"]
 
 EXPOSE 8000/tcp
