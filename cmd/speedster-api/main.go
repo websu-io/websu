@@ -10,6 +10,7 @@ func main() {
 	if mongoURI == "" {
 		mongoURI = "mongodb://localhost:27017"
 	}
-	a := api.NewApp(mongoURI)
+	a := api.NewApp()
+	api.CreateMongoClient(mongoURI)
 	a.Run(":8000")
 }

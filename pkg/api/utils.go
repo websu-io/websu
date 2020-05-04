@@ -9,6 +9,15 @@ import (
 	"strings"
 )
 
+type malformedRequest struct {
+	status int
+	msg    string
+}
+
+func (mr *malformedRequest) Error() string {
+	return mr.msg
+}
+
 func decodeJSONBody(w http.ResponseWriter, r *http.Request, dst interface{}) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 

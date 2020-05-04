@@ -17,7 +17,8 @@ import (
 var a *api.App
 
 func TestMain(m *testing.M) {
-	a = api.NewApp("mongodb://localhost:27017")
+	a = api.NewApp()
+	api.CreateMongoClient("mongodb://localhost:27017")
 	code := m.Run()
 	os.Exit(code)
 }
@@ -35,7 +36,7 @@ func checkResponseCode(t *testing.T, expected int, response *httptest.ResponseRe
 }
 
 func dbClearScans() {
-	a.DB.Database("speedster").Collection("scans").DeleteMany(context.TODO(), bson.D{}, nil)
+	api.DB.Database("speedster").Collection("scans").DeleteMany(context.TODO(), bson.D{}, nil)
 }
 
 func TestGetScansEmpty(t *testing.T) {
