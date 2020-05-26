@@ -2,10 +2,8 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"github.com/reviewor-org/speedster/pkg/api"
-	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -36,7 +34,13 @@ func checkResponseCode(t *testing.T, expected int, response *httptest.ResponseRe
 }
 
 func dbClearScans() {
-	api.DB.Database("speedster").Collection("scans").DeleteMany(context.TODO(), bson.D{}, nil)
+	scans, err := api.GetAllScans()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, scan := range scans {
+		scan.Delete()
+	}
 }
 
 func TestGetScansEmpty(t *testing.T) {

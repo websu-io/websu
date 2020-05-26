@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"cloud.google.com/go/storage"
 	"context"
 	"encoding/json"
 	"errors"
@@ -13,6 +14,11 @@ import (
 	"os"
 	"os/exec"
 	"time"
+)
+
+var (
+	gcsClient *storage.Client
+	Bucket    string
 )
 
 type App struct {
@@ -96,19 +102,35 @@ func (a *App) getScan(w http.ResponseWriter, r *http.Request) {
 func (a *App) deleteScan(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	if err := DeleteScanByObjectIDHex(params["id"]); err != nil {
+	scan, err := GetScanByObjectIDHex(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := scan.Delete(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	json.NewEncoder(w).Encode(&Scan{})
 }
 
+func CreateGCSClient() *storage.Client {
+	ctx := context.Background()
+	Bucket = os.Getenv("GCS_BUCKET")
+	// Creates a client.
+	var err error
+	gcsClient, err = storage.NewClient(ctx)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+	return gcsClient
+}
+
 func runLightHouse(url string) (objectID string, err error) {
 	// lighthouse --chrome-flags="--headless" $URL --output="html" --output=json --output-path=/tmp/$URL
-	bucket := os.Getenv("GCS_BUCKET")
 	guid := xid.New().String()
 	objectID = guid + ".json"
-	outputGCS := gcsClient.Bucket(bucket).Object(objectID)
+	outputGCS := gcsClient.Bucket(Bucket).Object(objectID)
 	ctx := context.Background()
 	w := outputGCS.NewWriter(ctx)
 	defer w.Close()
@@ -122,5 +144,5 @@ func runLightHouse(url string) (objectID string, err error) {
 		log.Print(err)
 		return "", err
 	}
-	return "gs://" + bucket + "/" + objectID, nil
+	return "gs://" + Bucket + "/" + objectID, nil
 }

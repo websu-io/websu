@@ -3,11 +3,13 @@ package api
 import (
 	"context"
 	"errors"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"path/filepath"
 	"time"
 )
 
@@ -59,9 +61,32 @@ func NewScan() *Scan {
 func (scan *Scan) Insert() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	collection := DB.Database("speedster").Collection("scans")
-	log.Print("Inserting Scan: %+v", scan)
+	log.Printf("Inserting Scan: %+v", scan)
 	if _, err := collection.InsertOne(ctx, scan); err != nil {
 		return err
+	}
+	return nil
+}
+
+func (scan *Scan) Delete() error {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	log.Printf("Deleting GCS object of scan: %+v", scan)
+	o := gcsClient.Bucket(Bucket).Object(filepath.Base(scan.JsonLocation))
+	if err := o.Delete(ctx); err != nil {
+		return err
+	}
+	result, err := DB.Database("speedster").Collection("scans").DeleteOne(context.TODO(), bson.M{"_id": scan.ID}, nil)
+	if err != nil {
+		return err
+	}
+	if result.DeletedCount == 1 {
+		return nil
+	} else if result.DeletedCount == 0 {
+		return errors.New("Scan with id " + scan.ID.Hex() + " did not exist")
+	} else {
+		return errors.New("Multiple scans were deleted.")
 	}
 	return nil
 }
@@ -79,23 +104,4 @@ func GetScanByObjectIDHex(hex string) (Scan, error) {
 	}
 	return scan, nil
 
-}
-
-func DeleteScanByObjectIDHex(hex string) error {
-	oid, err := primitive.ObjectIDFromHex(hex)
-	if err != nil {
-		return err
-	}
-
-	result, err := DB.Database("speedster").Collection("scans").DeleteOne(context.TODO(), bson.M{"_id": oid}, nil)
-	if err != nil {
-		return err
-	}
-	if result.DeletedCount == 1 {
-		return nil
-	} else if result.DeletedCount == 0 {
-		return errors.New("Scan with id " + hex + " did not exist")
-	} else {
-		return errors.New("Multiple scans were deleted.")
-	}
 }
