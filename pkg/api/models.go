@@ -28,11 +28,10 @@ func CreateMongoClient(mongoURI string) {
 }
 
 type Scan struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id"`
-	URL       string             `json:"url" bson:"url"`
-	JSON      string             `json:"json" bson:"json"`
-	HTML      string             `json:"html" bson:"html"`
-	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	ID           primitive.ObjectID `json:"id" bson:"_id"`
+	URL          string             `json:"url" bson:"url"`
+	JsonLocation string             `json:"jsonLocation" bson:"jsonLocation"`
+	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
 }
 
 func GetAllScans() ([]Scan, error) {
@@ -60,7 +59,7 @@ func NewScan() *Scan {
 func (scan *Scan) Insert() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	collection := DB.Database("speedster").Collection("scans")
-	log.Print("Inserting Scan:", scan.ID, scan.URL)
+	log.Print("Inserting Scan: %+v", scan)
 	if _, err := collection.InsertOne(ctx, scan); err != nil {
 		return err
 	}

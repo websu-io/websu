@@ -2,11 +2,12 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"github.com/rs/xid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -22,6 +23,7 @@ type App struct {
 func NewApp() *App {
 	a := new(App)
 	a.SetupRoutes()
+	CreateGCSClient()
 	return a
 }
 
@@ -67,14 +69,16 @@ func (a *App) createScan(w http.ResponseWriter, r *http.Request) {
 	scan.CreatedAt = time.Now()
 	log.Printf("Decoded json from HTTP body. Scan: %+v", scan)
 
-	html, jsonResult := runLightHouse(scan.URL, "/home/chrome/reports/speedster")
-	scan.HTML = string(html)
-	scan.JSON = string(jsonResult)
+	jsonLocation, err := runLightHouse(scan.URL)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	scan.JsonLocation = jsonLocation
 	if err := scan.Insert(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
 	json.NewEncoder(w).Encode(&scan)
 }
 
@@ -99,33 +103,24 @@ func (a *App) deleteScan(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&Scan{})
 }
 
-func runLightHouse(url, outputPath string) (html, json []byte) {
+func runLightHouse(url string) (objectID string, err error) {
 	// lighthouse --chrome-flags="--headless" $URL --output="html" --output=json --output-path=/tmp/$URL
+	bucket := os.Getenv("GCS_BUCKET")
+	guid := xid.New().String()
+	objectID = guid + ".json"
+	outputGCS := gcsClient.Bucket(bucket).Object(objectID)
+	ctx := context.Background()
+	w := outputGCS.NewWriter(ctx)
+	defer w.Close()
 	cmd := exec.Command("lighthouse", "--chrome-flags=\"--headless\"", url,
-		"--output=json", "--output=html", "--output-path="+outputPath)
-	var stdOut, stdErr bytes.Buffer
-	cmd.Stdout = &stdOut
+		"--output=json", "--output-path=stdout")
+	var stdErr bytes.Buffer
+	cmd.Stdout = w
 	cmd.Stderr = &stdErr
 	log.Printf("Running command %+v", cmd)
-
-	if err := cmd.Run(); err != nil {
+	if err = cmd.Run(); err != nil {
 		log.Print(err)
-		return nil, nil
+		return "", err
 	}
-	defer os.Remove(outputPath + ".report.json")
-	defer os.Remove(outputPath + ".report.html")
-
-	var err error
-	json, err = ioutil.ReadFile(outputPath + ".report.json")
-	if err != nil {
-		log.Print("Error reading lighthouse json output file:", err)
-		return nil, nil
-	}
-	html, err = ioutil.ReadFile(outputPath + ".report.html")
-	if err != nil {
-		log.Print("Error reading lighthouse html output file:", err)
-		return nil, nil
-	}
-
-	return html, json
+	return "gs://" + bucket + "/" + objectID, nil
 }
