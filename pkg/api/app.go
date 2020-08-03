@@ -77,12 +77,13 @@ func (a *App) createScan(w http.ResponseWriter, r *http.Request) {
 	scan.CreatedAt = time.Now()
 	log.Printf("Decoded json from HTTP body. Scan: %+v", scan)
 
-	jsonLocation, err := runLightHouse(scan.URL)
+	jsonLocation, jsonResult, err := runLightHouse(scan.URL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	scan.JsonLocation = jsonLocation
+	scan.Json = string(jsonResult)
 	if err := scan.Insert(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -128,7 +129,7 @@ func CreateGCSClient() *storage.Client {
 	return gcsClient
 }
 
-func runLightHouse(url string) (objectID string, err error) {
+func runLightHouse(url string) (objectID string, json []byte, err error) {
 	// lighthouse --chrome-flags="--headless" $URL --output="html" --output=json --output-path=/tmp/$URL
 	guid := xid.New().String()
 	objectID = guid + ".json"
@@ -139,12 +140,18 @@ func runLightHouse(url string) (objectID string, err error) {
 	cmd := exec.Command("lighthouse", "--chrome-flags=\"--headless\"", url,
 		"--output=json", "--output-path=stdout")
 	var stdErr bytes.Buffer
-	cmd.Stdout = w
+	var stdOut bytes.Buffer
+	cmd.Stdout = &stdOut
 	cmd.Stderr = &stdErr
 	log.Printf("Running command %+v", cmd)
 	if err = cmd.Run(); err != nil {
 		log.Print(err)
-		return "", err
+		return "", nil, err
 	}
-	return "gs://" + Bucket + "/" + objectID, nil
+	result := stdOut.Bytes()
+	if _, err := w.Write(result); err != nil {
+		log.Print(err)
+		return "", nil, err
+	}
+	return "gs://" + Bucket + "/" + objectID, result, nil
 }

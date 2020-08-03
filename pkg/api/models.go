@@ -33,6 +33,7 @@ type Scan struct {
 	ID           primitive.ObjectID `json:"id" bson:"_id"`
 	URL          string             `json:"url" bson:"url"`
 	JsonLocation string             `json:"jsonLocation" bson:"jsonLocation"`
+	Json         string             `json:"json" bson:"-"`
 	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
 }
 
