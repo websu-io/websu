@@ -39,7 +39,7 @@ type Scan struct {
 
 func GetAllScans() ([]Scan, error) {
 	scans := []Scan{}
-	collection := DB.Database("speedster").Collection("scans")
+	collection := DB.Database("websu").Collection("scans")
 	c := context.TODO()
 	cursor, err := collection.Find(c, bson.D{})
 	if err != nil {
@@ -61,7 +61,7 @@ func NewScan() *Scan {
 
 func (scan *Scan) Insert() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	collection := DB.Database("speedster").Collection("scans")
+	collection := DB.Database("websu").Collection("scans")
 	log.Printf("Inserting Scan: %+v", scan)
 	if _, err := collection.InsertOne(ctx, scan); err != nil {
 		return err
@@ -78,7 +78,7 @@ func (scan *Scan) Delete() error {
 	if err := o.Delete(ctx); err != nil {
 		return err
 	}
-	result, err := DB.Database("speedster").Collection("scans").DeleteOne(context.TODO(), bson.M{"_id": scan.ID}, nil)
+	result, err := DB.Database("websu").Collection("scans").DeleteOne(context.TODO(), bson.M{"_id": scan.ID}, nil)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (scan *Scan) Delete() error {
 
 func GetScanByObjectIDHex(hex string) (Scan, error) {
 	var scan Scan
-	collection := DB.Database("speedster").Collection("scans")
+	collection := DB.Database("websu").Collection("scans")
 	oid, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
 		return scan, err

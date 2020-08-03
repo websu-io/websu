@@ -1,17 +1,17 @@
 FROM golang:1.13 AS builder
 
-WORKDIR /go/src/github.com/reviewor-org/speedster
+WORKDIR /go/src/github.com/websu-io/websu
 COPY . .
 
 RUN go get -d -v ./...
-RUN go build ./cmd/speedster-api && mv speedster-api /
+RUN go build ./cmd/websu-api && mv websu-api /
 
 CMD ["app"]
 
 FROM justinribeiro/lighthouse
 
-COPY --from=builder /speedster-api /speedster-api
+COPY --from=builder /websu-api /websu-api
 
-ENTRYPOINT ["/speedster-api"]
+ENTRYPOINT ["/websu-api"]
 
 EXPOSE 8000/tcp

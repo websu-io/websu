@@ -1,4 +1,4 @@
-module github.com/reviewor-org/speedster
+module github.com/websu-io/websu
 
 go 1.14
 

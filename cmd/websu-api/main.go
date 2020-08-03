@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/reviewor-org/speedster/pkg/api"
+	"github.com/websu-io/websu/pkg/api"
 	"os"
 )
 

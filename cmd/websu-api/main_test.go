@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/reviewor-org/speedster/pkg/api"
+	"github.com/websu-io/websu/pkg/api"
 	"log"
 	"net/http"
 	"net/http/httptest"
