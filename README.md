@@ -1,6 +1,6 @@
 # Websu - Web App performance and uptime
 
-Speedster helps you understand whether your web applications performs well.
+Websu helps you understand whether your web applications performs well.
 
 ## Environment variables that are expected
 `GCS_BUCKET`: the Google Cloud Storage bucket used for storing lighthouse json results
