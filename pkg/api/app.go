@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"github.com/rs/xid"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
@@ -43,7 +44,8 @@ func (a *App) SetupRoutes() {
 
 func (a *App) Run(address string) {
 	log.Print("Listening on :8000")
-	http.ListenAndServe(address, a.Router)
+	handler := cors.Default().Handler(a.Router)
+	http.ListenAndServe(address, handler)
 }
 
 func (a *App) getScans(w http.ResponseWriter, r *http.Request) {

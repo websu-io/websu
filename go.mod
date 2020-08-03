@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/storage v1.8.0
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/gorilla/mux v1.7.4
+	github.com/rs/cors v1.7.0
 	github.com/rs/xid v1.2.1
 	go.mongodb.org/mongo-driver v1.3.2
 	golang.org/x/mod v0.3.0 // indirect
