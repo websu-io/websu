@@ -73,10 +73,13 @@ func (scan *Scan) Delete() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	log.Printf("Deleting GCS object of scan: %+v", scan)
-	o := gcsClient.Bucket(Bucket).Object(filepath.Base(scan.JsonLocation))
-	if err := o.Delete(ctx); err != nil {
-		return err
+	if Bucket != "" {
+		log.Printf("Deleting GCS object of scan: %+v", scan)
+		o := gcsClient.Bucket(Bucket).Object(filepath.Base(scan.JsonLocation))
+		if err := o.Delete(ctx); err != nil {
+			return err
+		}
+
 	}
 	result, err := DB.Database("websu").Collection("scans").DeleteOne(context.TODO(), bson.M{"_id": scan.ID}, nil)
 	if err != nil {

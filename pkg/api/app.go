@@ -30,7 +30,9 @@ type App struct {
 func NewApp() *App {
 	a := new(App)
 	a.SetupRoutes()
-	CreateGCSClient()
+	if Bucket != "" {
+		CreateGCSClient()
+	}
 	return a
 }
 
@@ -133,10 +135,6 @@ func runLightHouse(url string) (objectID string, json []byte, err error) {
 	// lighthouse --chrome-flags="--headless" $URL --output="html" --output=json --output-path=/tmp/$URL
 	guid := xid.New().String()
 	objectID = guid + ".json"
-	outputGCS := gcsClient.Bucket(Bucket).Object(objectID)
-	ctx := context.Background()
-	w := outputGCS.NewWriter(ctx)
-	defer w.Close()
 	cmd := exec.Command("lighthouse", "--chrome-flags=\"--headless\"", url,
 		"--output=json", "--output-path=stdout")
 	var stdErr bytes.Buffer
@@ -149,9 +147,18 @@ func runLightHouse(url string) (objectID string, json []byte, err error) {
 		return "", nil, err
 	}
 	result := stdOut.Bytes()
-	if _, err := w.Write(result); err != nil {
-		log.Print(err)
-		return "", nil, err
+	if Bucket != "" {
+		outputGCS := gcsClient.Bucket(Bucket).Object(objectID)
+		ctx := context.Background()
+		w := outputGCS.NewWriter(ctx)
+		defer w.Close()
+		if _, err := w.Write(result); err != nil {
+			log.Print(err)
+			return "", nil, err
+		}
+		return "gs://" + Bucket + "/" + objectID, result, nil
+	} else {
+		return "", result, nil
 	}
-	return "gs://" + Bucket + "/" + objectID, result, nil
+
 }
