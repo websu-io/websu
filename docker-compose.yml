@@ -1,9 +1,7 @@
 version: '3.0'
 services:
-  web:
-    build: .
-    environment:
-      - MONGO_URI=mongodb://mongo:27017
+  websu:
+    image: samos123/websu:latest
     ports:
     - "8000:8000"
     links:
