@@ -42,6 +42,9 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/scans", a.createScan).Methods("POST")
 	a.Router.HandleFunc("/scans/{id}", a.getScan).Methods("GET")
 	a.Router.HandleFunc("/scans/{id}", a.deleteScan).Methods("DELETE")
+
+	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
+
 }
 
 func (a *App) Run(address string) {
