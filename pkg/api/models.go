@@ -62,7 +62,6 @@ func NewScan() *Scan {
 func (scan *Scan) Insert() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	collection := DB.Database("websu").Collection("scans")
-	log.Printf("Inserting Scan: %+v", scan)
 	if _, err := collection.InsertOne(ctx, scan); err != nil {
 		return err
 	}
