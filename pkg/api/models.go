@@ -16,16 +16,14 @@ import (
 var DB *mongo.Client
 
 func CreateMongoClient(mongoURI string) {
-	var err error
-	DB, err = mongo.NewClient(options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		log.Fatal(err)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	err = DB.Connect(ctx)
+	var err error
+	DB, err = mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
 	if err != nil {
 		log.Fatal(err)
+	} else {
+		log.Println("Connected to Database")
 	}
 }
 
