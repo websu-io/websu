@@ -1,7 +1,9 @@
+[![websu.io](screenshot.png "Websu.io screenshot")](https://websu.io)
 # Websu - Web speed analysis
 
 Websu helps you understand your web applications performance.
-Lighthouse is used for running an analysis and simulating how a website
+[Lighthouse](https://github.com/GoogleChrome/lighthouse) is used for running
+an analysis and simulating how a website
 performs in a real browser. Websu provides an API (this git repo) and
 a Web UI that consumes the API. The API is more focused on people that wish
 to utilize Lighthouse as a Service for example to integrate it in their
