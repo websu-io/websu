@@ -139,7 +139,7 @@ func runLightHouse(url string) (objectID string, json []byte, err error) {
 	guid := xid.New().String()
 	objectID = guid + ".json"
 	cmd := exec.Command("lighthouse", "--chrome-flags=\"--headless\"", url,
-		"--output=json", "--output-path=stdout")
+		"--output=json", "--output-path=stdout", "--emulated-form-factor=none")
 	var stdErr bytes.Buffer
 	var stdOut bytes.Buffer
 	cmd.Stdout = &stdOut
