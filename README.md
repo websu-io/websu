@@ -1,7 +1,7 @@
 [![websu.io](screenshot.png "Websu.io screenshot")](https://websu.io)
 # Websu - Web speed analysis
 
-Websu helps you understand your web applications performance.
+[Websu](https://websu.io) helps you understand your web applications performance.
 [Lighthouse](https://github.com/GoogleChrome/lighthouse) is used for running
 an analysis and simulating how a website
 performs in a real browser. Websu provides an API (this git repo) and
@@ -14,7 +14,28 @@ CICD pipelines or web applications.
 - Retrieve a list of previous results
 - Web UI to host your own internal Lighthouse service
 - Ability to compare results (TODO)
- 
+
+## Trying it out
+You have 2 options:
+1. Use the public demo instance available here: [https://websu.io](https://websu.io)
+2. Deploy Websu in your own environment. See for example Deployment using Docker below.
+
+## Deployment using Docker
+Deploy the docker image in your environment by running the following:
+```bash
+git clone https://github.com/websu-io/websu
+cd websu
+docker-compose up -d
+```
+The docker-compose will bring up the Websu container and a mongoDB container.
+The Websu containers runs the websu API and the static frontend web UI with
+it. After deployment you can access Websu UI by visiting http://IP:8000
+
+You can test the API by running the following:
+```
+curl -d '{"URL": "https://websu.io"}' localhost:8000/scans
+```
+
 ## FAQ
 - **Why not just use Lighthouse directly?**
     - Lighthouse provides a CLI and an extension that can be installed in
