@@ -1,14 +1,22 @@
 version: '3.0'
 services:
-  websu:
-    image: samos123/websu:latest
+  websu-api:
+    image: samos123/websu-api:latest
     ports:
     - "8000:8000"
+    environment:
+    - "LIGHTHOUSE_SERVER=lighthouse-server:50051"
+    - "MONGO_URI=mongodb://mongo:27017"
     links:
     - mongo
-    cap_add:
-      - SYS_ADMIN
+    - lighthouse-server
+  lighthouse-server:
+    image: samos123/lighthouse-server:latest
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    ports: 
+    - "127.0.0.1:50051:50051"
   mongo:
     image: mongo:4
     ports: 
-      - "127.0.0.1:27017:27017"
+    - "127.0.0.1:27017:27017"

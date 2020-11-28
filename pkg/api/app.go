@@ -1,38 +1,36 @@
 package api
 
 import (
-	"bytes"
-	"cloud.google.com/go/storage"
 	"context"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-	"github.com/rs/xid"
+	pb "github.com/websu-io/websu/pkg/lighthouse"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"google.golang.org/grpc"
 	"log"
 	"net/http"
-	"os"
-	"os/exec"
 	"time"
 )
 
-var (
-	gcsClient *storage.Client
-	Bucket    string
-)
-
 type App struct {
-	Router *mux.Router
+	Router           *mux.Router
+	LighthouseClient pb.LighthouseServiceClient
 }
 
-// "mongodb://localhost:27017"
+func ConnectToLighthouseServer(address string) pb.LighthouseServiceClient {
+	conn, err := grpc.Dial(address, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	log.Println("Connecting to lighthouse gRPC server")
+	return pb.NewLighthouseServiceClient(conn)
+}
+
 func NewApp() *App {
 	a := new(App)
 	a.SetupRoutes()
-	if Bucket != "" {
-		CreateGCSClient()
-	}
 	return a
 }
 
@@ -42,15 +40,19 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/scans", a.createScan).Methods("POST")
 	a.Router.HandleFunc("/scans/{id}", a.getScan).Methods("GET")
 	a.Router.HandleFunc("/scans/{id}", a.deleteScan).Methods("DELETE")
-
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
-
 }
 
 func (a *App) Run(address string) {
-	log.Print("Listening on :8000")
 	handler := cors.Default().Handler(a.Router)
-	http.ListenAndServe(address, handler)
+	s := &http.Server{
+		Addr:         address,
+		Handler:      handler,
+		ReadTimeout:  300 * time.Second,
+		WriteTimeout: 300 * time.Second,
+	}
+	log.Printf("Listening on %s", address)
+	log.Fatal(s.ListenAndServe())
 }
 
 func (a *App) getScans(w http.ResponseWriter, r *http.Request) {
@@ -67,8 +69,7 @@ func (a *App) createScan(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var scan Scan
-	err := decodeJSONBody(w, r, &scan)
-	if err != nil {
+	if err := decodeJSONBody(w, r, &scan); err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
 			http.Error(w, mr.msg, mr.status)
@@ -82,13 +83,19 @@ func (a *App) createScan(w http.ResponseWriter, r *http.Request) {
 	scan.CreatedAt = time.Now()
 	log.Printf("Decoded json from HTTP body. Scan: %+v", scan)
 
-	jsonLocation, jsonResult, err := runLightHouse(scan.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*45)
+	defer cancel()
+	lhResult, err := a.LighthouseClient.Run(ctx, &pb.LighthouseRequest{Url: scan.URL})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Printf("could not run lighthouse: %v\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	scan.JsonLocation = jsonLocation
-	scan.Json = string(jsonResult)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	scan.Json = string(lhResult.GetStdout())
 	if err := scan.Insert(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -120,48 +127,4 @@ func (a *App) deleteScan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(&Scan{})
-}
-
-func CreateGCSClient() *storage.Client {
-	ctx := context.Background()
-	Bucket = os.Getenv("GCS_BUCKET")
-	// Creates a client.
-	var err error
-	gcsClient, err = storage.NewClient(ctx)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-	return gcsClient
-}
-
-func runLightHouse(url string) (objectID string, json []byte, err error) {
-	// lighthouse --chrome-flags="--headless" $URL --output="html" --output=json --output-path=/tmp/$URL
-	guid := xid.New().String()
-	objectID = guid + ".json"
-	cmd := exec.Command("lighthouse", "--chrome-flags=\"--headless\"", url,
-		"--output=json", "--output-path=stdout", "--emulated-form-factor=none")
-	var stdErr bytes.Buffer
-	var stdOut bytes.Buffer
-	cmd.Stdout = &stdOut
-	cmd.Stderr = &stdErr
-	log.Printf("Running command %+v", cmd)
-	if err = cmd.Run(); err != nil {
-		log.Print(err)
-		return "", nil, err
-	}
-	result := stdOut.Bytes()
-	if Bucket != "" {
-		outputGCS := gcsClient.Bucket(Bucket).Object(objectID)
-		ctx := context.Background()
-		w := outputGCS.NewWriter(ctx)
-		defer w.Close()
-		if _, err := w.Write(result); err != nil {
-			log.Print(err)
-			return "", nil, err
-		}
-		return "gs://" + Bucket + "/" + objectID, result, nil
-	} else {
-		return "", result, nil
-	}
-
 }

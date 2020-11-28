@@ -9,7 +9,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
-	"path/filepath"
 	"time"
 )
 
@@ -28,11 +27,10 @@ func CreateMongoClient(mongoURI string) {
 }
 
 type Scan struct {
-	ID           primitive.ObjectID `json:"id" bson:"_id"`
-	URL          string             `json:"url" bson:"url"`
-	JsonLocation string             `json:"jsonLocation" bson:"jsonLocation"`
-	Json         string             `json:"json" bson:"-"`
-	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
+	ID        primitive.ObjectID `json:"id" bson:"_id"`
+	URL       string             `json:"url" bson:"url"`
+	Json      string             `json:"json" bson:"-"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }
 
 func GetAllScans() ([]Scan, error) {
@@ -70,14 +68,6 @@ func (scan *Scan) Delete() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	if Bucket != "" {
-		log.Printf("Deleting GCS object of scan: %+v", scan)
-		o := gcsClient.Bucket(Bucket).Object(filepath.Base(scan.JsonLocation))
-		if err := o.Delete(ctx); err != nil {
-			return err
-		}
-
-	}
 	result, err := DB.Database("websu").Collection("scans").DeleteOne(context.TODO(), bson.M{"_id": scan.ID}, nil)
 	if err != nil {
 		return err

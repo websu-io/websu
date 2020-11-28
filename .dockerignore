@@ -1,0 +1,4 @@
+build/Dockerfile*
+.git
+README.md
+test-docker.sh

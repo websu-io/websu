@@ -3,11 +3,15 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/golang/mock/gomock"
 	"github.com/websu-io/websu/pkg/api"
+	"github.com/websu-io/websu/pkg/lighthouse"
+	"github.com/websu-io/websu/pkg/mocks"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -16,8 +20,20 @@ var a *api.App
 
 func TestMain(m *testing.M) {
 	a = api.NewApp()
+
+	cmd := exec.Command("docker-compose", "up", "-d", "mongo")
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Starting mongo docker container had an error: %v", err)
+	}
+
 	api.CreateMongoClient("mongodb://localhost:27017")
 	code := m.Run()
+
+	cmd = exec.Command("docker-compose", "stop", "mongo")
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Stopping mongo docker container had an error: %v", err)
+	}
+
 	os.Exit(code)
 }
 
@@ -53,14 +69,23 @@ func TestGetScansEmpty(t *testing.T) {
 	}
 }
 
-func createScan() *httptest.ResponseRecorder {
+func createScan(t *testing.T) *httptest.ResponseRecorder {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLightHouseClient := mocks.NewMockLighthouseServiceClient(ctrl)
+	a.LighthouseClient = mockLightHouseClient
 	scan := bytes.NewBuffer([]byte(`{"URL": "https://reviewor.org"}`))
 	req, _ := http.NewRequest("POST", "/scans", scan)
-	return executeRequest(req)
+	mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
+		&lighthouse.LighthouseResult{Stdout: []byte("{}")},
+		nil,
+	)
+	resp := executeRequest(req)
+	return resp
 }
 
 func TestCreateScan(t *testing.T) {
-	response := createScan()
+	response := createScan(t)
 	checkResponseCode(t, http.StatusOK, response)
 	if body := response.Body.String(); strings.Contains(body, "reviewor.org") != true {
 		t.Errorf("Expected body to contain reviewor.org. Got %s", body)
@@ -69,7 +94,7 @@ func TestCreateScan(t *testing.T) {
 }
 
 func TestCreateGetandDeleteScan(t *testing.T) {
-	r := createScan()
+	r := createScan(t)
 	checkResponseCode(t, http.StatusOK, r)
 
 	var scan api.Scan

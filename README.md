@@ -50,5 +50,16 @@ curl -d '{"URL": "https://websu.io"}' localhost:8000/scans
   we used for writing to Google Cloud Storage. Only needed when `GCS_BUCKET` is set.
 - `MONGO_URI`: the URI to used to connect to MongoDB. Default is `mongodb://localhost:27017`.
 
+## Developer instructions
+
+Regenerate gRPC golang client and server code
+```
+cd pkg/lighthouse
+protoc --go_out=. --go_opt=paths=source_relative \
+  --go-grpc_out=. --go-grpc_opt=paths=source_relative \
+  lighthouse.proto
+cd -
+```
+
 ## License
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
