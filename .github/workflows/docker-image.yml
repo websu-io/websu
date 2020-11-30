@@ -12,20 +12,19 @@ jobs:
     - uses: actions/setup-go@v2
     - name: go test ./...
       run: |
-          docker run -p 27017:27017 -d --name mongo mongo
           sudo npm install -g lighthouse
           go test ./...
     - name: Build and push Docker images
-      dockerfile: build/Dockerfile_websu-api
       uses: docker/build-push-action@v1
       with:
+        dockerfile: build/Dockerfile_websu-api
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: samos123/websu-api
     - name: Build and push Docker images
-      dockerfile: build/Dockerfile_lighthouse-server
       uses: docker/build-push-action@v1
       with:
+        dockerfile: build/Dockerfile_lighthouse-server
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: samos123/lighthouse-server
