@@ -7,9 +7,10 @@ import (
 )
 
 var (
-	listenAddress    = ":8000"
-	mongoURI         = "mongodb://localhost:27017"
-	lighthouseServer = "localhost:50051"
+	listenAddress          = ":8000"
+	mongoURI               = "mongodb://localhost:27017"
+	lighthouseServer       = "localhost:50051"
+	lighthouseServerSecure = false
 )
 
 func main() {
@@ -22,10 +23,13 @@ func main() {
 	flag.StringVar(&lighthouseServer, "lighthouse-server",
 		cmd.GetenvString("LIGHTHOUSE_SERVER", lighthouseServer),
 		"The gRPC backend that runs lighthouse. Example: localhost:50051")
+	flag.BoolVar(&lighthouseServerSecure, "lighthouse-server-secure",
+		cmd.GetenvBool("LIGHTHOUSE_SERVER_SECURE", lighthouseServerSecure),
+		"Boolean flag to indicate whether TLS should be used to connect to lighthouse server. Default: false")
 	flag.Parse()
 
 	a := api.NewApp()
-	a.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer)
+	a.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
 	api.CreateMongoClient(mongoURI)
 	a.Run(listenAddress)
 }

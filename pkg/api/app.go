@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
@@ -9,6 +10,7 @@ import (
 	pb "github.com/websu-io/websu/pkg/lighthouse"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"log"
 	"net/http"
 	"time"
@@ -19,12 +21,27 @@ type App struct {
 	LighthouseClient pb.LighthouseServiceClient
 }
 
-func ConnectToLighthouseServer(address string) pb.LighthouseServiceClient {
-	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
+func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseServiceClient {
+	var opts []grpc.DialOption
+
+	if secure {
+		creds := credentials.NewTLS(&tls.Config{
+			InsecureSkipVerify: true,
+		})
+		opts = []grpc.DialOption{
+			grpc.WithTransportCredentials(creds),
+		}
+	} else {
+		opts = []grpc.DialOption{
+			grpc.WithInsecure(),
+		}
 	}
-	log.Println("Connecting to lighthouse gRPC server")
+
+	log.Printf("Connecting to gRPC Service [%s]", address)
+	conn, err := grpc.Dial(address, opts...)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return pb.NewLighthouseServiceClient(conn)
 }
 
