@@ -23,8 +23,8 @@ func (s *Server) Run(ctx context.Context, in *LighthouseRequest) (*LighthouseRes
 }
 
 func runLighthouse(url string) (json []byte, err error) {
-	cmd := exec.Command("docker", "run", "--cap-add=SYS_ADMIN", "justinribeiro/lighthouse",
-		"lighthouse", "--chrome-flags=\"--headless\"", url,
+	cmd := exec.Command("docker", "run", "justinribeiro/lighthouse",
+		"lighthouse", "--chrome-flags=\"--no-sandbox --headless\"", url,
 		"--output=json", "--output-path=stdout", "--emulated-form-factor=none")
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stdout = &stdOut
