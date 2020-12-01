@@ -7,9 +7,37 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build ./cmd/lighthouse-server && mv lighthouse-server /
 
-FROM alpine:3
+FROM debian:buster-slim
+
+# Install deps + add Chrome Stable + purge all the things
+RUN apt-get update && apt-get install -y \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  gnupg \
+  --no-install-recommends \
+  && curl -sSL https://deb.nodesource.com/setup_12.x | bash - \
+  && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+  && echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+  && apt-get update && apt-get install -y \
+  google-chrome-stable \
+  fontconfig \
+  fonts-ipafont-gothic \
+  fonts-wqy-zenhei \
+  fonts-thai-tlwg \
+  fonts-kacst \
+  fonts-symbola \
+  fonts-noto \
+  fonts-freefont-ttf \
+  nodejs \
+  --no-install-recommends \
+  && apt-get purge --auto-remove -y curl gnupg \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g lighthouse
+
 WORKDIR /websu
-RUN apk add --update --no-cache docker
+
 COPY --from=builder /lighthouse-server /websu/lighthouse-server
 
 ENTRYPOINT ["/websu/lighthouse-server"]

@@ -1,10 +1,25 @@
 package cmd
 
-import "os"
+import (
+	"log"
+	"os"
+	"strconv"
+)
 
-func Getenv(key string, defaultVal string) string {
+func GetenvString(key string, defaultVal string) string {
 	if val, ok := os.LookupEnv(key); ok {
 		return val
+	}
+	return defaultVal
+}
+
+func GetenvBool(key string, defaultVal bool) bool {
+	if val, ok := os.LookupEnv(key); ok {
+		b, err := strconv.ParseBool(val)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return b
 	}
 	return defaultVal
 }

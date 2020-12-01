@@ -10,11 +10,12 @@ import (
 
 type Server struct {
 	UnimplementedLighthouseServiceServer
+	UseDocker bool
 }
 
 func (s *Server) Run(ctx context.Context, in *LighthouseRequest) (*LighthouseResult, error) {
 	log.Printf("Received: %v", in.GetUrl())
-	json, err := runLighthouse(in.GetUrl())
+	json, err := runLighthouse(in.GetUrl(), s.UseDocker)
 	if err != nil {
 		return nil, err
 	} else {
@@ -22,10 +23,14 @@ func (s *Server) Run(ctx context.Context, in *LighthouseRequest) (*LighthouseRes
 	}
 }
 
-func runLighthouse(url string) (json []byte, err error) {
-	cmd := exec.Command("docker", "run", "justinribeiro/lighthouse",
-		"lighthouse", "--chrome-flags=\"--no-sandbox --headless\"", url,
+func runLighthouse(url string, useDocker bool) (json []byte, err error) {
+	lhCommand := []string{}
+	if useDocker {
+		lhCommand = append(lhCommand, "docker", "run", "justinribeiro/lighthouse")
+	}
+	lhCommand = append(lhCommand, "lighthouse", "--chrome-flags=\"--no-sandbox --headless\"", url,
 		"--output=json", "--output-path=stdout", "--emulated-form-factor=none")
+	cmd := exec.Command(lhCommand[0], lhCommand[1:]...)
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stdout = &stdOut
 	cmd.Stderr = &stdErr

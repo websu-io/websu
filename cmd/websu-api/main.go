@@ -14,13 +14,13 @@ var (
 
 func main() {
 	flag.StringVar(&listenAddress, "listen-address",
-		cmd.Getenv("LISTEN_ADDRESS", listenAddress),
+		cmd.GetenvString("LISTEN_ADDRESS", listenAddress),
 		"The address and port to listen on. Examples: \":8000\", \"127.0.0.1:8000\"")
 	flag.StringVar(&mongoURI, "mongo-uri",
-		cmd.Getenv("MONGO_URI", mongoURI),
+		cmd.GetenvString("MONGO_URI", mongoURI),
 		"The MongoDB URI to connect to. Example: mongodb://localhost:27017")
 	flag.StringVar(&lighthouseServer, "lighthouse-server",
-		cmd.Getenv("LIGHTHOUSE_SERVER", lighthouseServer),
+		cmd.GetenvString("LIGHTHOUSE_SERVER", lighthouseServer),
 		"The gRPC backend that runs lighthouse. Example: localhost:50051")
 	flag.Parse()
 
