@@ -6,9 +6,9 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/mux v1.7.4
+	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/rs/cors v1.7.0
-	github.com/stretchr/testify v1.4.0 // indirect
-	go.mongodb.org/mongo-driver v1.3.2
+	go.mongodb.org/mongo-driver v1.4.4
 	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a // indirect
 	golang.org/x/sys v0.0.0-20201126233918-771906719818 // indirect
