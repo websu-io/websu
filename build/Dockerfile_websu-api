@@ -10,6 +10,7 @@ RUN CGO_ENABLED=0 go build ./cmd/websu-api && mv websu-api /
 FROM alpine:3
 WORKDIR /websu
 COPY --from=builder /websu-api /websu/websu-api
+RUN apk --no-cache add ca-certificates
 RUN mkdir static && \
     wget https://github.com/websu-io/websu-ui/releases/latest/download/build.tar.gz && \
     tar -xzf build.tar.gz -C static && \

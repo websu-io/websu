@@ -36,6 +36,52 @@ You can test the API by running the following:
 curl -d '{"URL": "https://websu.io"}' localhost:8000/scans
 ```
 
+## Deployment using Google Cloud Run (managed)
+Cloud Run is a great cost efficient option to deploy a production ready
+instance of Websu. Cloud Run takes care of automatically scaling and launching
+Lighthouse jobs. In addition the free limits of Cloud Run managed are very
+generous. (Disclaimer I work for Google Cloud, so that's what I know best)
+
+Push the images to Google Cloud Artifact Registry:
+```
+export PROJECT_ID=$(gcloud config get-value project)
+gcloud artifacts repositories create websu --repository-format=docker \
+  --location=us-central1 --description="Websu Docker repository"
+gcloud auth configure-docker us-central1-docker.pkg.dev
+docker pull samos123/lighthouse-server:latest
+docker tag samos123/lighthouse-server:latest us-central1-docker.pkg.dev/$PROJECT_ID/websu/lighthouse-server:latest
+docker push us-central1-docker.pkg.dev/$PROJECT_ID/websu/lighthouse-server:latest
+docker pull samos123/websu-api:latest
+docker tag samos123/websu-api:latest us-central1-docker.pkg.dev/$PROJECT_ID/websu/websu-api:latest
+docker push us-central1-docker.pkg.dev/$PROJECT_ID/websu/websu-api:latest
+```
+
+Deploy lighthouse-server on Cloud Run:
+```
+gcloud run deploy lighthouse-server \
+  --image us-central1-docker.pkg.dev/$PROJECT_ID/websu/lighthouse-server:latest \
+  --memory 512Mi --platform managed --port 50051 --timeout 60s --concurrency 1 \
+  --region us-central1 --set-env-vars="USE_DOCKER=false" --allow-unauthenticated
+```
+
+Deploy websu-api on Cloud Run:
+```
+ENDPOINT=$(\
+  gcloud run services list \
+  --project=${PROJECT_ID} \
+  --region=us-central1 \
+  --platform=managed \
+  --format="value(status.address.url)" \
+  --filter="metadata.name=lighthouse-server")
+ENDPOINT=${ENDPOINT#https://}:443
+
+gcloud run deploy websu-api \
+  --image us-central1-docker.pkg.dev/$PROJECT_ID/websu/websu-api:latest \
+  --platform managed --port 8000 --timeout 60s --region us-central1 \
+  --set-env-vars="MONGO_URI=mongodb://ip-of-your-mongo-db-instance,LIGHTHOUSE_SERVER=$ENDPOINT,LIGHTHOUSE_SERVER_SECURE=true" \
+  --allow-unauthenticated
+```
+
 ## FAQ
 - **Why not just use Lighthouse directly?**
     - Lighthouse provides a CLI and an extension that can be installed in
