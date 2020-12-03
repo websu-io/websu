@@ -40,7 +40,8 @@ curl -d '{"URL": "https://websu.io"}' localhost:8000/scans
 Cloud Run is a great cost efficient option to deploy a production ready
 instance of Websu. Cloud Run takes care of automatically scaling and launching
 Lighthouse jobs. In addition the free limits of Cloud Run managed are very
-generous. (Disclaimer I work for Google Cloud, so that's what I know best)
+generous. The public [https://websu.io](https://websu.io) instance is running
+on Cloud Run.
 
 Push the images to Google Cloud Artifact Registry:
 ```
@@ -89,12 +90,6 @@ gcloud run deploy websu-api \
       it easier to consume Lighthouse for both standard users and web
       developers with an HTTP API and a Web UI.
 
-
-## Environment variables that are expected
-- `GCS_BUCKET`: the Google Cloud Storage bucket used for storing lighthouse json results. This is optional.
-- `GOOGLE_APPLICATION_CREDENTIALS`: the path to the service account that will
-  we used for writing to Google Cloud Storage. Only needed when `GCS_BUCKET` is set.
-- `MONGO_URI`: the URI to used to connect to MongoDB. Default is `mongodb://localhost:27017`.
 
 ## Developer instructions
 
