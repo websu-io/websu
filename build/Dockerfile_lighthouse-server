@@ -9,6 +9,8 @@ RUN CGO_ENABLED=0 go build ./cmd/lighthouse-server && mv lighthouse-server /
 
 FROM debian:buster-slim
 
+ENV USE_DOCKER=false
+
 # Install deps + add Chrome Stable + purge all the things
 RUN apt-get update && apt-get install -y \
   apt-transport-https \
