@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	_ "github.com/websu-io/websu/docs"
+	"github.com/websu-io/websu/docs"
 	"github.com/websu-io/websu/pkg/api"
 	"github.com/websu-io/websu/pkg/cmd"
 )
@@ -12,6 +12,7 @@ var (
 	mongoURI               = "mongodb://localhost:27017"
 	lighthouseServer       = "localhost:50051"
 	lighthouseServerSecure = false
+	apiHost                = "localhost:8000"
 )
 
 // @title Websu API
@@ -24,6 +25,9 @@ func main() {
 	flag.StringVar(&listenAddress, "listen-address",
 		cmd.GetenvString("LISTEN_ADDRESS", listenAddress),
 		"The address and port to listen on. Examples: \":8000\", \"127.0.0.1:8000\"")
+	flag.StringVar(&apiHost, "api-host",
+		cmd.GetenvString("API_HOST", apiHost),
+		"The API hostname that's accessible from external users. Default: \"localhost:8000\", Example: \"websu.io\"")
 	flag.StringVar(&mongoURI, "mongo-uri",
 		cmd.GetenvString("MONGO_URI", mongoURI),
 		"The MongoDB URI to connect to. Example: mongodb://localhost:27017")
@@ -34,6 +38,8 @@ func main() {
 		cmd.GetenvBool("LIGHTHOUSE_SERVER_SECURE", lighthouseServerSecure),
 		"Boolean flag to indicate whether TLS should be used to connect to lighthouse server. Default: false")
 	flag.Parse()
+
+	docs.SwaggerInfo.Host = apiHost
 
 	a := api.NewApp()
 	a.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
