@@ -1,0 +1,79 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Run lighthouse as a service",
+        "title": "Websu API",
+        "contact": {},
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/",
+    "paths": {
+        "/reports": {
+            "post": {
+                "description": "Run a lighthouse audit to generate a report. The field `raw_json` contains the\nJSON output returned from lighthouse as a string. Note that `raw_json` field is\nonly returned during initial creation of the report.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create a Lighthouse Report",
+                "parameters": [
+                    {
+                        "description": "Lighthouse parameters to generate the report",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.ReportInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/api.Report"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "api.Report": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "raw_json": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://websu.io"
+                }
+            }
+        },
+        "api.ReportInput": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "example": "https://websu.io"
+                }
+            }
+        }
+    }
+}

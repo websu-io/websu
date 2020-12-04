@@ -26,73 +26,77 @@ func CreateMongoClient(mongoURI string) {
 	}
 }
 
-type Scan struct {
+type ReportInput struct {
+	URL string `json:"url" bson:"url" example:"https://websu.io"`
+}
+
+type Report struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id"`
-	URL       string             `json:"url" bson:"url"`
-	Json      string             `json:"json" bson:"-"`
+	URL       string             `json:"url" bson:"url" example:"https://websu.io"`
+	RawJSON   string             `json:"raw_json" bson:"-"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }
 
-func GetAllScans() ([]Scan, error) {
-	scans := []Scan{}
-	collection := DB.Database("websu").Collection("scans")
+func GetAllReports() ([]Report, error) {
+	reports := []Report{}
+	collection := DB.Database("websu").Collection("reports")
 	c := context.TODO()
 	cursor, err := collection.Find(c, bson.D{})
 	if err != nil {
 		return nil, err
 	}
-	if err := cursor.All(c, &scans); err != nil {
+	if err := cursor.All(c, &reports); err != nil {
 		return nil, err
 	}
-	return scans, nil
+	return reports, nil
 
 }
 
-func NewScan() *Scan {
-	s := new(Scan)
+func NewReport() *Report {
+	s := new(Report)
 	s.ID = primitive.NewObjectID()
 	s.CreatedAt = time.Now()
 	return s
 }
 
-func (scan *Scan) Insert() error {
+func (report *Report) Insert() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	collection := DB.Database("websu").Collection("scans")
-	if _, err := collection.InsertOne(ctx, scan); err != nil {
+	collection := DB.Database("websu").Collection("reports")
+	if _, err := collection.InsertOne(ctx, report); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (scan *Scan) Delete() error {
+func (report *Report) Delete() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	result, err := DB.Database("websu").Collection("scans").DeleteOne(context.TODO(), bson.M{"_id": scan.ID}, nil)
+	result, err := DB.Database("websu").Collection("reports").DeleteOne(context.TODO(), bson.M{"_id": report.ID}, nil)
 	if err != nil {
 		return err
 	}
 	if result.DeletedCount == 1 {
 		return nil
 	} else if result.DeletedCount == 0 {
-		return errors.New("Scan with id " + scan.ID.Hex() + " did not exist")
+		return errors.New("Report with id " + report.ID.Hex() + " did not exist")
 	} else {
-		return errors.New("Multiple scans were deleted.")
+		return errors.New("Multiple reports were deleted.")
 	}
 	return nil
 }
 
-func GetScanByObjectIDHex(hex string) (Scan, error) {
-	var scan Scan
-	collection := DB.Database("websu").Collection("scans")
+func GetReportByObjectIDHex(hex string) (Report, error) {
+	var report Report
+	collection := DB.Database("websu").Collection("reports")
 	oid, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
-		return scan, err
+		return report, err
 	}
-	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&scan)
+	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&report)
 	if err != nil {
-		return scan, err
+		return report, err
 	}
-	return scan, nil
+	return report, nil
 
 }

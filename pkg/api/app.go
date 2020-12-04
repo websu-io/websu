@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	"github.com/swaggo/http-swagger"
 	pb "github.com/websu-io/websu/pkg/lighthouse"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
@@ -53,11 +54,13 @@ func NewApp() *App {
 
 func (a *App) SetupRoutes() {
 	a.Router = mux.NewRouter()
-	a.Router.HandleFunc("/scans", a.getScans).Methods("GET")
-	a.Router.HandleFunc("/scans", a.createScan).Methods("POST")
-	a.Router.HandleFunc("/scans/{id}", a.getScan).Methods("GET")
-	a.Router.HandleFunc("/scans/{id}", a.deleteScan).Methods("DELETE")
+	a.Router.HandleFunc("/reports", a.getReports).Methods("GET")
+	a.Router.HandleFunc("/reports", a.createReport).Methods("POST")
+	a.Router.HandleFunc("/reports/{id}", a.getReport).Methods("GET")
+	a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
+	a.Router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
 	a.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
+
 }
 
 func (a *App) Run(address string) {
@@ -72,21 +75,29 @@ func (a *App) Run(address string) {
 	log.Fatal(s.ListenAndServe())
 }
 
-func (a *App) getScans(w http.ResponseWriter, r *http.Request) {
+func (a *App) getReports(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	scans, err := GetAllScans()
+	reports, err := GetAllReports()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(&scans)
+	json.NewEncoder(w).Encode(&reports)
 }
 
-func (a *App) createScan(w http.ResponseWriter, r *http.Request) {
+// @Summary Create a Lighthouse Report
+// @Description Run a lighthouse audit to generate a report. The field `raw_json` contains the
+// @Description JSON output returned from lighthouse as a string. Note that `raw_json` field is
+// @Description only returned during initial creation of the report.
+// @Accept  json
+// @Param body body api.ReportInput true "Lighthouse parameters to generate the report"
+// @Produce  json
+// @Success 200 {array} api.Report
+// @Router /reports [post]
+func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	var scan Scan
-	if err := decodeJSONBody(w, r, &scan); err != nil {
+	var report Report
+	if err := decodeJSONBody(w, r, &report); err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
 			http.Error(w, mr.msg, mr.status)
@@ -96,52 +107,49 @@ func (a *App) createScan(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	scan.ID = primitive.NewObjectID()
-	scan.CreatedAt = time.Now()
-	log.Printf("Decoded json from HTTP body. Scan: %+v", scan)
+	report.ID = primitive.NewObjectID()
+	report.CreatedAt = time.Now()
+	log.Printf("Decoded json from HTTP body. Report: %+v", report)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*45)
 	defer cancel()
-	lhResult, err := a.LighthouseClient.Run(ctx, &pb.LighthouseRequest{Url: scan.URL})
+	lhResult, err := a.LighthouseClient.Run(ctx, &pb.LighthouseRequest{Url: report.URL})
 	if err != nil {
 		log.Printf("could not run lighthouse: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	scan.Json = string(lhResult.GetStdout())
-	if err := scan.Insert(); err != nil {
+	report.RawJSON = string(lhResult.GetStdout())
+	if err := report.Insert(); err != nil {
+		log.Printf("unable to insert report: %v\n", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(&scan)
+	json.NewEncoder(w).Encode(&report)
 }
 
-func (a *App) getScan(w http.ResponseWriter, r *http.Request) {
+func (a *App) getReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	scan, err := GetScanByObjectIDHex(params["id"])
+	report, err := GetReportByObjectIDHex(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(&scan)
+	json.NewEncoder(w).Encode(&report)
 }
 
-func (a *App) deleteScan(w http.ResponseWriter, r *http.Request) {
+func (a *App) deleteReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	scan, err := GetScanByObjectIDHex(params["id"])
+	report, err := GetReportByObjectIDHex(params["id"])
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err := scan.Delete(); err != nil {
+	if err := report.Delete(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	json.NewEncoder(w).Encode(&Scan{})
+	json.NewEncoder(w).Encode(&Report{})
 }

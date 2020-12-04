@@ -49,19 +49,19 @@ func checkResponseCode(t *testing.T, expected int, response *httptest.ResponseRe
 	}
 }
 
-func dbClearScans() {
-	scans, err := api.GetAllScans()
+func dbClearReports() {
+	reports, err := api.GetAllReports()
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, scan := range scans {
-		scan.Delete()
+	for _, report := range reports {
+		report.Delete()
 	}
 }
 
-func TestGetScansEmpty(t *testing.T) {
-	dbClearScans()
-	req, _ := http.NewRequest("GET", "/scans", nil)
+func TestGetReportsEmpty(t *testing.T) {
+	dbClearReports()
+	req, _ := http.NewRequest("GET", "/reports", nil)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response)
 	if body := response.Body.String(); strings.TrimSpace(body) != "[]" {
@@ -69,13 +69,13 @@ func TestGetScansEmpty(t *testing.T) {
 	}
 }
 
-func createScan(t *testing.T) *httptest.ResponseRecorder {
+func createReport(t *testing.T) *httptest.ResponseRecorder {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockLightHouseClient := mocks.NewMockLighthouseServiceClient(ctrl)
 	a.LighthouseClient = mockLightHouseClient
-	scan := bytes.NewBuffer([]byte(`{"URL": "https://reviewor.org"}`))
-	req, _ := http.NewRequest("POST", "/scans", scan)
+	report := bytes.NewBuffer([]byte(`{"URL": "https://reviewor.org"}`))
+	req, _ := http.NewRequest("POST", "/reports", report)
 	mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
 		&lighthouse.LighthouseResult{Stdout: []byte("{}")},
 		nil,
@@ -84,47 +84,47 @@ func createScan(t *testing.T) *httptest.ResponseRecorder {
 	return resp
 }
 
-func TestCreateScan(t *testing.T) {
-	response := createScan(t)
+func TestCreateReport(t *testing.T) {
+	response := createReport(t)
 	checkResponseCode(t, http.StatusOK, response)
 	if body := response.Body.String(); strings.Contains(body, "reviewor.org") != true {
 		t.Errorf("Expected body to contain reviewor.org. Got %s", body)
 	}
-	dbClearScans()
+	dbClearReports()
 }
 
-func TestCreateGetandDeleteScan(t *testing.T) {
-	r := createScan(t)
+func TestCreateGetandDeleteReport(t *testing.T) {
+	r := createReport(t)
 	checkResponseCode(t, http.StatusOK, r)
 
-	var scan api.Scan
-	if err := json.NewDecoder(r.Body).Decode(&scan); err != nil {
+	var report api.Report
+	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
 		t.Errorf("Error: %s. Json decoding body: %s\n", err, r.Body)
 	}
 
-	req, _ := http.NewRequest("GET", "/scans/"+scan.ID.Hex(), nil)
+	req, _ := http.NewRequest("GET", "/reports/"+report.ID.Hex(), nil)
 	log.Printf("Request: %+v", req)
 	r = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, r)
 
-	req, _ = http.NewRequest("DELETE", "/scans/"+scan.ID.Hex(), nil)
+	req, _ = http.NewRequest("DELETE", "/reports/"+report.ID.Hex(), nil)
 	log.Printf("Request: %+v", req)
 	r = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, r)
 
-	dbClearScans()
+	dbClearReports()
 }
 
-func TestDeleteScanNonExisting(t *testing.T) {
+func TestDeleteReportNonExisting(t *testing.T) {
 	// not a valid hex string
-	req, _ := http.NewRequest("DELETE", "/scans/doesnotexist", nil)
+	req, _ := http.NewRequest("DELETE", "/reports/doesnotexist", nil)
 	log.Printf("Request: %+v", req)
 	r := executeRequest(req)
 	checkResponseCode(t, http.StatusBadRequest, r)
 	log.Printf("Response: %+v", r)
 
 	// valid hex string but doesnt exist
-	req, _ = http.NewRequest("DELETE", "/scans/5eab5a25b830c33d857dc045", nil)
+	req, _ = http.NewRequest("DELETE", "/reports/5eab5a25b830c33d857dc045", nil)
 	log.Printf("Request: %+v", req)
 	r = executeRequest(req)
 	checkResponseCode(t, http.StatusBadRequest, r)

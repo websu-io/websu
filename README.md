@@ -33,7 +33,7 @@ it. After deployment you can access Websu UI by visiting http://IP:8000
 
 You can test the API by running the following:
 ```
-curl -d '{"URL": "https://websu.io"}' localhost:8000/scans
+curl -d '{"URL": "https://websu.io"}' localhost:8000/reports
 ```
 
 ## Deployment using Google Cloud Run (managed)

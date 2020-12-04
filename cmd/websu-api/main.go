@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	_ "github.com/websu-io/websu/docs"
 	"github.com/websu-io/websu/pkg/api"
 	"github.com/websu-io/websu/pkg/cmd"
 )
@@ -13,6 +14,12 @@ var (
 	lighthouseServerSecure = false
 )
 
+// @title Websu API
+// @version 1.0
+// @description Run lighthouse as a service
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+// @BasePath /
 func main() {
 	flag.StringVar(&listenAddress, "listen-address",
 		cmd.GetenvString("LISTEN_ADDRESS", listenAddress),

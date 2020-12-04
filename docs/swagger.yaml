@@ -1,0 +1,55 @@
+basePath: /
+definitions:
+  api.Report:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      raw_json:
+        type: string
+      url:
+        example: https://websu.io
+        type: string
+    type: object
+  api.ReportInput:
+    properties:
+      url:
+        example: https://websu.io
+        type: string
+    type: object
+info:
+  contact: {}
+  description: Run lighthouse as a service
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: Websu API
+  version: "1.0"
+paths:
+  /reports:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Run a lighthouse audit to generate a report. The field `raw_json` contains the
+        JSON output returned from lighthouse as a string. Note that `raw_json` field is
+        only returned during initial creation of the report.
+      parameters:
+      - description: Lighthouse parameters to generate the report
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.ReportInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/api.Report'
+            type: array
+      summary: Create a Lighthouse Report
+swagger: "2.0"
