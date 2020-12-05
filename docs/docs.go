@@ -77,8 +77,7 @@ var doc = `{
                     "type": "string"
                 },
                 "url": {
-                    "type": "string",
-                    "example": "https://websu.io"
+                    "type": "string"
                 }
             }
         },
@@ -87,7 +86,7 @@ var doc = `{
             "properties": {
                 "url": {
                     "type": "string",
-                    "example": "https://websu.io"
+                    "example": "https://www.google.com"
                 }
             }
         }

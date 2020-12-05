@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"errors"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -27,12 +26,12 @@ func CreateMongoClient(mongoURI string) {
 }
 
 type ReportInput struct {
-	URL string `json:"url" bson:"url" example:"https://websu.io"`
+	URL string `json:"url" bson:"url" example:"https://www.google.com"`
 }
 
 type Report struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id"`
-	URL       string             `json:"url" bson:"url" example:"https://websu.io"`
+	URL       string             `json:"url" bson:"url"`
 	RawJSON   string             `json:"raw_json" bson:"-"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }
@@ -98,5 +97,4 @@ func GetReportByObjectIDHex(hex string) (Report, error) {
 		return report, err
 	}
 	return report, nil
-
 }

@@ -9,13 +9,12 @@ definitions:
       raw_json:
         type: string
       url:
-        example: https://websu.io
         type: string
     type: object
   api.ReportInput:
     properties:
       url:
-        example: https://websu.io
+        example: https://www.google.com
         type: string
     type: object
 info:

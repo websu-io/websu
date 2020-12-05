@@ -61,8 +61,7 @@
                     "type": "string"
                 },
                 "url": {
-                    "type": "string",
-                    "example": "https://websu.io"
+                    "type": "string"
                 }
             }
         },
@@ -71,7 +70,7 @@
             "properties": {
                 "url": {
                     "type": "string",
-                    "example": "https://websu.io"
+                    "example": "https://www.google.com"
                 }
             }
         }
