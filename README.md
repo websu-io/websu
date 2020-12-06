@@ -4,13 +4,13 @@
 [Websu](https://websu.io) helps you understand your web applications performance.
 [Lighthouse](https://github.com/GoogleChrome/lighthouse) is used for running
 an analysis and simulating how a website
-performs in a real browser. Websu provides an API (this git repo) and
+performs in a real browser. Websu provides an HTTP API (this git repo) and
 a Web UI that consumes the API. The API is more focused on people that wish
 to utilize Lighthouse as a Service for example to integrate it in their
 CICD pipelines or web applications.
 
 ## Features
-- Run Lighthouse and get JSON results with a simple HTTP call
+- Run lighthouse-as-a-service through a simple HTTP REST API
 - Retrieve a list of previous results
 - Web UI to host your own internal Lighthouse service
 - Ability to compare results (TODO)
@@ -33,7 +33,7 @@ it. After deployment you can access Websu UI by visiting http://IP:8000
 
 You can test the API by running the following:
 ```
-curl -d '{"URL": "https://websu.io"}' localhost:8000/reports
+curl -d '{"url": "https://www.google.com"}' localhost:8000/reports
 ```
 
 ## Deployment using Google Cloud Run (managed)
@@ -100,6 +100,11 @@ protoc --go_out=. --go_opt=paths=source_relative \
   --go-grpc_out=. --go-grpc_opt=paths=source_relative \
   lighthouse.proto
 cd -
+```
+
+Generate updated API documentation:
+```
+swag init -g cmd/websu-api/main.go
 ```
 
 ## License
