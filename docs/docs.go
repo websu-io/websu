@@ -64,9 +64,44 @@ var doc = `{
         }
     },
     "definitions": {
+        "api.AuditResult": {
+            "type": "object",
+            "properties": {
+                "DisplayValue": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "numericUnit": {
+                    "type": "string"
+                },
+                "numericValue": {
+                    "type": "number"
+                },
+                "score": {
+                    "type": "number"
+                },
+                "scoreDisplayMode": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "api.Report": {
             "type": "object",
             "properties": {
+                "audit_results": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/api.AuditResult"
+                    }
+                },
                 "created_at": {
                     "type": "string"
                 },

@@ -1,7 +1,30 @@
 basePath: /
 definitions:
+  api.AuditResult:
+    properties:
+      DisplayValue:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      numericUnit:
+        type: string
+      numericValue:
+        type: number
+      score:
+        type: number
+      scoreDisplayMode:
+        type: string
+      title:
+        type: string
+    type: object
   api.Report:
     properties:
+      audit_results:
+        additionalProperties:
+          $ref: '#/definitions/api.AuditResult'
+        type: object
       created_at:
         type: string
       id:

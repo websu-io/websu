@@ -30,10 +30,22 @@ type ReportInput struct {
 }
 
 type Report struct {
-	ID        primitive.ObjectID `json:"id" bson:"_id"`
-	URL       string             `json:"url" bson:"url"`
-	RawJSON   string             `json:"raw_json" bson:"-"`
-	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
+	ID           primitive.ObjectID     `json:"id" bson:"_id"`
+	URL          string                 `json:"url" bson:"url"`
+	RawJSON      string                 `json:"raw_json" bson:"-"`
+	CreatedAt    time.Time              `json:"created_at" bson:"created_at"`
+	AuditResults map[string]AuditResult `json:"audit_results" bson:"audit_results"`
+}
+
+type AuditResult struct {
+	ID               string  `json:"id"`
+	Title            string  `json:"title"`
+	Description      string  `json:"description"`
+	Score            float32 `json:"score"`
+	ScoreDisplayMode string  `json:"scoreDisplayMode"`
+	NumericValue     float64 `json:"numericValue"`
+	NumericUnit      string  `json:"numericUnit"`
+	DisplayValue     string  `json:"DisplayValue"`
 }
 
 func GetAllReports() ([]Report, error) {
