@@ -108,6 +108,9 @@ var doc = `{
                 "id": {
                     "type": "string"
                 },
+                "performance_score": {
+                    "type": "number"
+                },
                 "raw_json": {
                     "type": "string"
                 },

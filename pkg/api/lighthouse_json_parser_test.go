@@ -72,3 +72,20 @@ func TestParseAuditresults(t *testing.T) {
 		t.Errorf("Expected only 1 AuditResult but got %v", len(got))
 	}
 }
+
+func TestParsePerformanceScore(t *testing.T) {
+	testString := `
+{
+  "categories": {
+    "performance": {
+      "title": "Performance",
+      "id": "performance",
+      "score": 0.65
+    }
+}
+`
+	got := parsePerformanceScore([]byte(testString))
+	if got != float32(0.65) {
+		t.Errorf("Expected 0.65 but got %v", got)
+	}
+}

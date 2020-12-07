@@ -30,11 +30,12 @@ type ReportInput struct {
 }
 
 type Report struct {
-	ID           primitive.ObjectID     `json:"id" bson:"_id"`
-	URL          string                 `json:"url" bson:"url"`
-	RawJSON      string                 `json:"raw_json" bson:"-"`
-	CreatedAt    time.Time              `json:"created_at" bson:"created_at"`
-	AuditResults map[string]AuditResult `json:"audit_results" bson:"audit_results"`
+	ID               primitive.ObjectID     `json:"id" bson:"_id"`
+	URL              string                 `json:"url" bson:"url"`
+	RawJSON          string                 `json:"raw_json" bson:"-"`
+	CreatedAt        time.Time              `json:"created_at" bson:"created_at"`
+	PerformanceScore float32                `json:"performance_score" bson:"performance_score"`
+	AuditResults     map[string]AuditResult `json:"audit_results" bson:"audit_results"`
 }
 
 type AuditResult struct {

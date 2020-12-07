@@ -3,19 +3,27 @@ package api
 import (
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 )
 
 var keys = []string{
 	"first-contentful-paint",
-	"first-meaningful-paint",
 	"speed-index",
-	"estimated-input-latency",
+	"largest-contentful-paint",
+	"interactive",
 	"total-blocking-time",
+	"cumulative-layout-shift",
+	"first-meaningful-paint",
+	"estimated-input-latency",
 	"server-response-time",
 }
 
 type lhJsonResult struct {
 	Audits map[string]json.RawMessage `json:"audits"`
+}
+
+func parsePerformanceScore(rawJson []byte) float32 {
+	return float32(gjson.GetBytes(rawJson, "categories.performance.score").Float())
 }
 
 func parseAuditResults(rawJson []byte, keys []string) (map[string]AuditResult, error) {

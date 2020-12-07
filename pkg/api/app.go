@@ -126,6 +126,7 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Print("Error parsing audit results")
 	}
+	report.PerformanceScore = parsePerformanceScore(lhResult.GetStdout())
 	report.RawJSON = string(lhResult.GetStdout())
 	if err := report.Insert(); err != nil {
 		log.Printf("unable to insert report: %v\n", err)
