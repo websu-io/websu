@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os/exec"
+	"strings"
 )
 
 type Server struct {
@@ -15,7 +16,7 @@ type Server struct {
 
 func (s *Server) Run(ctx context.Context, in *LighthouseRequest) (*LighthouseResult, error) {
 	log.Printf("Received: %v", in.GetUrl())
-	json, err := runLighthouse(in.GetUrl(), s.UseDocker)
+	json, err := runLighthouse(in.GetUrl(), s.UseDocker, in.GetOptions(), in.GetChromeflags())
 	if err != nil {
 		return nil, err
 	} else {
@@ -23,13 +24,18 @@ func (s *Server) Run(ctx context.Context, in *LighthouseRequest) (*LighthouseRes
 	}
 }
 
-func runLighthouse(url string, useDocker bool) (json []byte, err error) {
+func runLighthouse(url string, useDocker bool, options []string, chromeflags []string) (json []byte, err error) {
 	lhCommand := []string{}
 	if useDocker {
 		lhCommand = append(lhCommand, "docker", "run", "justinribeiro/lighthouse")
 	}
-	lhCommand = append(lhCommand, "lighthouse", "--chrome-flags=\"--no-sandbox --headless\"", url,
-		"--output=json", "--output-path=stdout", "--emulated-form-factor=none")
+	defaultChromeflags := []string{"--no-sandbox", "--headless"}
+	chromeflags = append(defaultChromeflags, chromeflags...)
+	lhCommand = append(lhCommand, "lighthouse", url,
+		fmt.Sprintf("--chrome-flags=\"%s\"", strings.Join(chromeflags, " ")),
+		"--output=json", "--output-path=stdout")
+	lhCommand = append(lhCommand, options...)
+
 	cmd := exec.Command(lhCommand[0], lhCommand[1:]...)
 	var stdOut, stdErr bytes.Buffer
 	cmd.Stdout = &stdOut

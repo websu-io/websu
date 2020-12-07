@@ -17,7 +17,6 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type LighthouseServiceClient interface {
-	// Sends a greeting
 	Run(ctx context.Context, in *LighthouseRequest, opts ...grpc.CallOption) (*LighthouseResult, error)
 }
 
@@ -42,7 +41,6 @@ func (c *lighthouseServiceClient) Run(ctx context.Context, in *LighthouseRequest
 // All implementations must embed UnimplementedLighthouseServiceServer
 // for forward compatibility
 type LighthouseServiceServer interface {
-	// Sends a greeting
 	Run(context.Context, *LighthouseRequest) (*LighthouseResult, error)
 	mustEmbedUnimplementedLighthouseServiceServer()
 }

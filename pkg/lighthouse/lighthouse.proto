@@ -10,6 +10,8 @@ service LighthouseService {
 
 message LighthouseRequest {
   string url = 1;
+  repeated string options = 2;
+  repeated string chromeflags  = 3;
 }
 
 message LighthouseResult {
