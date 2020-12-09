@@ -41,11 +41,11 @@ var doc = `{
                 "parameters": [
                     {
                         "description": "Lighthouse parameters to generate the report",
-                        "name": "body",
+                        "name": "ReportRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.ReportInput"
+                            "$ref": "#/definitions/api.ReportRequest"
                         }
                     }
                 ],
@@ -105,6 +105,10 @@ var doc = `{
                 "created_at": {
                     "type": "string"
                 },
+                "form_factor": {
+                    "type": "string",
+                    "example": "desktop"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -119,9 +123,13 @@ var doc = `{
                 }
             }
         },
-        "api.ReportInput": {
+        "api.ReportRequest": {
             "type": "object",
             "properties": {
+                "form_factor": {
+                    "type": "string",
+                    "example": "desktop"
+                },
                 "url": {
                     "type": "string",
                     "example": "https://www.google.com"

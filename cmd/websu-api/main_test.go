@@ -69,32 +69,73 @@ func TestGetReportsEmpty(t *testing.T) {
 	}
 }
 
-func createReport(t *testing.T) *httptest.ResponseRecorder {
+func createReport(t *testing.T, body []byte, mockLighthouseServer bool) *httptest.ResponseRecorder {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockLightHouseClient := mocks.NewMockLighthouseServiceClient(ctrl)
 	a.LighthouseClient = mockLightHouseClient
-	report := bytes.NewBuffer([]byte(`{"URL": "https://reviewor.org"}`))
+	report := bytes.NewBuffer(body)
 	req, _ := http.NewRequest("POST", "/reports", report)
-	mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
-		&lighthouse.LighthouseResult{Stdout: []byte("{}")},
-		nil,
-	)
+	if mockLighthouseServer {
+		mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
+			&lighthouse.LighthouseResult{Stdout: []byte("{}")},
+			nil,
+		)
+	}
 	resp := executeRequest(req)
 	return resp
 }
 
 func TestCreateReport(t *testing.T) {
-	response := createReport(t)
+	body := []byte(`{"URL": "https://www.google.com"}`)
+	response := createReport(t, body, true)
 	checkResponseCode(t, http.StatusOK, response)
-	if body := response.Body.String(); strings.Contains(body, "reviewor.org") != true {
-		t.Errorf("Expected body to contain reviewor.org. Got %s", body)
+	if body := response.Body.String(); strings.Contains(body, "google.com") != true {
+		t.Errorf("Expected body to contain google.com. Got %s", body)
+	}
+	dbClearReports()
+}
+
+func TestCreateReportFFDesktop(t *testing.T) {
+	body := []byte(`{"url": "https://www.google.com", "form_factor": "desktop"}`)
+	response := createReport(t, body, true)
+	checkResponseCode(t, http.StatusOK, response)
+	if body := response.Body.String(); strings.Contains(body, "google.com") != true {
+		t.Errorf("Expected body to contain google.com. Got %s", body)
+	}
+	if body := response.Body.String(); strings.Contains(body, "\"form_factor\":\"desktop\"") != true {
+		t.Errorf("Expected body to form_factor: 'desktop'. Got %s", body)
+	}
+	dbClearReports()
+}
+
+func TestCreateReportFFMobile(t *testing.T) {
+	body := []byte(`{"url": "https://www.google.com", "form_factor": "mobile"}`)
+	response := createReport(t, body, true)
+	checkResponseCode(t, http.StatusOK, response)
+	if body := response.Body.String(); strings.Contains(body, "google.com") != true {
+		t.Errorf("Expected body to contain google.com. Got %s", body)
+	}
+	if body := response.Body.String(); strings.Contains(body, "\"form_factor\":\"mobile\"") != true {
+		t.Errorf("Expected body to form_factor: 'mobile'. Got %s", body)
+	}
+	dbClearReports()
+}
+
+func TestCreateReportFFMInvalid(t *testing.T) {
+	body := []byte(`{"url": "https://www.google.com", "form_factor": "invalid"}`)
+	response := createReport(t, body, false)
+	checkResponseCode(t, http.StatusBadRequest, response)
+	if body := response.Body.String(); strings.Contains(body, "Invalid form_factor") != true {
+		t.Errorf("Expected body to contain Invalid form_factor. Got %s", body)
 	}
 	dbClearReports()
 }
 
 func TestCreateGetandDeleteReport(t *testing.T) {
-	r := createReport(t)
+	body := []byte(`{"URL": "https://www.google.com"}`)
+	r := createReport(t, body, true)
+
 	checkResponseCode(t, http.StatusOK, r)
 
 	var report api.Report

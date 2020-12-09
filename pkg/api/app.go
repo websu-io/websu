@@ -5,11 +5,11 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	"github.com/swaggo/http-swagger"
 	pb "github.com/websu-io/websu/pkg/lighthouse"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"log"
@@ -93,14 +93,14 @@ func (a *App) getReports(w http.ResponseWriter, r *http.Request) {
 // @Description JSON output returned from lighthouse as a string. Note that `raw_json` field is
 // @Description only returned during initial creation of the report.
 // @Accept  json
-// @Param body body api.ReportInput true "Lighthouse parameters to generate the report"
+// @Param ReportRequest body api.ReportRequest true "Lighthouse parameters to generate the report"
 // @Produce  json
 // @Success 200 {array} api.Report
 // @Router /reports [post]
 func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var report Report
-	if err := decodeJSONBody(w, r, &report); err != nil {
+	var reportRequest ReportRequest
+	if err := decodeJSONBody(w, r, &reportRequest); err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
 			http.Error(w, mr.msg, mr.status)
@@ -110,18 +110,31 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	report.ID = primitive.NewObjectID()
-	report.CreatedAt = time.Now()
-	log.Printf("Decoded json from HTTP body. Report: %+v", report)
-
+	log.Printf("Decoded json from HTTP body. ReportRequest: %+v", reportRequest)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*45)
 	defer cancel()
-	lhResult, err := a.LighthouseClient.Run(ctx, &pb.LighthouseRequest{Url: report.URL})
+	if reportRequest.FormFactor == "" {
+		reportRequest.FormFactor = "desktop"
+	}
+	if reportRequest.FormFactor != "desktop" && reportRequest.FormFactor != "mobile" {
+		err := errors.New("Invalid form_factor, must be desktop or mobile")
+		log.Print(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	ffs := fmt.Sprintf("--emulated-form-factor=%v", reportRequest.FormFactor)
+	lhOptions := []string{ffs}
+	lhRequest := pb.LighthouseRequest{
+		Url:     reportRequest.URL,
+		Options: lhOptions,
+	}
+	lhResult, err := a.LighthouseClient.Run(ctx, &lhRequest)
 	if err != nil {
 		log.Printf("could not run lighthouse: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	report := NewReportFromRequest(&reportRequest)
 	report.AuditResults, err = parseAuditResults(lhResult.GetStdout(), keys)
 	if err != nil {
 		log.Print("Error parsing audit results")

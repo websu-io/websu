@@ -9,6 +9,7 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/gorilla/mux v1.7.4
+	github.com/jinzhu/copier v0.1.0
 	github.com/kisielk/errcheck v1.2.0 // indirect
 	github.com/rs/cors v1.7.0
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

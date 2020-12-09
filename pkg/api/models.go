@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/jinzhu/copier"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -25,13 +26,15 @@ func CreateMongoClient(mongoURI string) {
 	}
 }
 
-type ReportInput struct {
-	URL string `json:"url" bson:"url" example:"https://www.google.com"`
+type ReportRequest struct {
+	URL        string `json:"url" example:"https://www.google.com"`
+	FormFactor string `json:"form_factor" example:"desktop"`
 }
 
 type Report struct {
 	ID               primitive.ObjectID     `json:"id" bson:"_id"`
 	URL              string                 `json:"url" bson:"url"`
+	FormFactor       string                 `json:"form_factor" bson:"form_factor" example:"desktop"`
 	RawJSON          string                 `json:"raw_json" bson:"-"`
 	CreatedAt        time.Time              `json:"created_at" bson:"created_at"`
 	PerformanceScore float32                `json:"performance_score" bson:"performance_score"`
@@ -65,10 +68,16 @@ func GetAllReports() ([]Report, error) {
 }
 
 func NewReport() *Report {
-	s := new(Report)
-	s.ID = primitive.NewObjectID()
-	s.CreatedAt = time.Now()
-	return s
+	r := new(Report)
+	r.ID = primitive.NewObjectID()
+	r.CreatedAt = time.Now()
+	return r
+}
+
+func NewReportFromRequest(rr *ReportRequest) *Report {
+	r := NewReport()
+	copier.Copy(&r, rr)
+	return r
 }
 
 func (report *Report) Insert() error {

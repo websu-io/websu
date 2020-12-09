@@ -27,6 +27,9 @@ definitions:
         type: object
       created_at:
         type: string
+      form_factor:
+        example: desktop
+        type: string
       id:
         type: string
       performance_score:
@@ -36,8 +39,11 @@ definitions:
       url:
         type: string
     type: object
-  api.ReportInput:
+  api.ReportRequest:
     properties:
+      form_factor:
+        example: desktop
+        type: string
       url:
         example: https://www.google.com
         type: string
@@ -62,10 +68,10 @@ paths:
       parameters:
       - description: Lighthouse parameters to generate the report
         in: body
-        name: body
+        name: ReportRequest
         required: true
         schema:
-          $ref: '#/definitions/api.ReportInput'
+          $ref: '#/definitions/api.ReportRequest'
       produces:
       - application/json
       responses:
