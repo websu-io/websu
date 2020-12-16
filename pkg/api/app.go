@@ -123,7 +123,14 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ffs := fmt.Sprintf("--emulated-form-factor=%v", reportRequest.FormFactor)
-	lhOptions := []string{ffs, "--throttling-method=provided"}
+	lhOptions := []string{
+		ffs, "--throttling.throughputKbps=50000",
+		"--throttling.rttMs=40",
+		"--throttling.cpuSlowdownMultiplier=1",
+		"--throttling.requestLatencyMs=0",
+		"--throttling.downloadThroughputKbps=0",
+		"--throttling.uploadThroughputKbps=0",
+	}
 	lhRequest := pb.LighthouseRequest{
 		Url:     reportRequest.URL,
 		Options: lhOptions,
