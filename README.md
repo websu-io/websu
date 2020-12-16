@@ -2,12 +2,10 @@
 # Websu - Web speed analysis
 
 [Websu](https://websu.io) helps you understand your web applications performance.
-[Lighthouse](https://github.com/GoogleChrome/lighthouse) is used for running
-an analysis and simulating how a website
-performs in a real browser. Websu provides an HTTP API (this git repo) and
-a Web UI that consumes the API. The API is more focused on people that wish
-to utilize Lighthouse as a Service for example to integrate it in their
-CICD pipelines or web applications.
+[Lighthouse](https://github.com/GoogleChrome/lighthouse) is used to generate performance reports.
+Websu is providing Lighthouse-as-a-Service
+through a simple HTTP REST API to run Lighthouse. The react based frontend
+[Websu UI](https://github.com/websu-io/websu-ui) consumes the Websu HTTP API.
 
 ## Features
 - Run lighthouse-as-a-service through a simple HTTP REST API
@@ -20,7 +18,7 @@ You have 2 options:
 1. Use the public demo instance available here: [https://websu.io](https://websu.io)
 2. Deploy Websu in your own environment. See for example Deployment using Docker below.
 
-## Deployment using Docker
+## Deployment using Docker (easiest)
 Deploy the docker image in your environment by running the following:
 ```bash
 git clone https://github.com/websu-io/websu
@@ -36,7 +34,7 @@ You can test the API by running the following:
 curl -d '{"url": "https://www.google.com"}' localhost:8000/reports
 ```
 
-## Deployment using Google Cloud Run (managed)
+## Deployment using Google Cloud Run managed (harder, better, faster)
 Cloud Run is a great cost efficient option to deploy a production ready
 instance of Websu. Cloud Run takes care of automatically scaling and launching
 Lighthouse jobs. In addition the free limits of Cloud Run managed are very
@@ -88,7 +86,9 @@ gcloud run deploy websu-api \
     - Lighthouse provides a CLI and an extension that can be installed in
       Chrome. Lighthouse doesn't provide an HTTP API or a Web UI. Websu makes
       it easier to consume Lighthouse for both standard users and web
-      developers with an HTTP API and a Web UI.
+      developers with an HTTP API and a Web UI. It also allows you to
+      store the results of runs so you can compare and view them at a
+      later time.
 
 
 ## Developer instructions
