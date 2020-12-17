@@ -36,6 +36,9 @@ definitions:
         type: number
       raw_json:
         type: string
+      throughput_kbps:
+        example: 50000
+        type: integer
       url:
         type: string
     type: object
@@ -44,6 +47,9 @@ definitions:
       form_factor:
         example: desktop
         type: string
+      throughput_kbps:
+        example: 50000
+        type: integer
       url:
         example: https://www.google.com
         type: string

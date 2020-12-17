@@ -78,8 +78,7 @@ func createReport(t *testing.T, body []byte, mockLighthouseServer bool) *httptes
 	req, _ := http.NewRequest("POST", "/reports", report)
 	if mockLighthouseServer {
 		mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
-			&lighthouse.LighthouseResult{Stdout: []byte("{}")},
-			nil,
+			&lighthouse.LighthouseResult{Stdout: []byte("{}")}, nil,
 		)
 	}
 	resp := executeRequest(req)
@@ -129,6 +128,20 @@ func TestCreateReportFFMInvalid(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "Invalid form_factor") != true {
 		t.Errorf("Expected body to contain Invalid form_factor. Got %s", body)
 	}
+	dbClearReports()
+}
+
+func TestCreateReportThroughputKbpsValid(t *testing.T) {
+	body := []byte(`{"url": "https://www.google.com", "throughput_kbps": 50000}`)
+	response := createReport(t, body, true)
+	checkResponseCode(t, http.StatusOK, response)
+	dbClearReports()
+}
+
+func TestCreateReportThroughputKbpsInvalid(t *testing.T) {
+	body := []byte(`{"url": "https://www.google.com", "throughput_kbps": "not a number"}`)
+	response := createReport(t, body, false)
+	checkResponseCode(t, http.StatusBadRequest, response)
 	dbClearReports()
 }
 

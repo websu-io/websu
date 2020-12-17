@@ -118,6 +118,10 @@ var doc = `{
                 "raw_json": {
                     "type": "string"
                 },
+                "throughput_kbps": {
+                    "type": "integer",
+                    "example": 50000
+                },
                 "url": {
                     "type": "string"
                 }
@@ -129,6 +133,10 @@ var doc = `{
                 "form_factor": {
                     "type": "string",
                     "example": "desktop"
+                },
+                "throughput_kbps": {
+                    "type": "integer",
+                    "example": 50000
                 },
                 "url": {
                     "type": "string",
