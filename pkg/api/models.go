@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"github.com/jinzhu/copier"
+	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
 	"time"
 )
 
-var DB *mongo.Client
+var (
+	DB           *mongo.Client
+	DatabaseName = "websu"
+)
 
 func CreateMongoClient(mongoURI string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -22,7 +25,7 @@ func CreateMongoClient(mongoURI string) {
 	if err != nil {
 		log.Fatal(err)
 	} else {
-		log.Println("Connected to Database")
+		log.Info("Connected to Database")
 	}
 }
 
@@ -30,6 +33,7 @@ type ReportRequest struct {
 	URL            string `json:"url" example:"https://www.google.com"`
 	FormFactor     string `json:"form_factor" example:"desktop"`
 	ThroughputKbps int64  `json:"throughput_kbps" example:"50000"`
+	Location       string `json:"location" example:"australia-southeast1"`
 }
 
 type Report struct {
@@ -54,9 +58,21 @@ type AuditResult struct {
 	DisplayValue     string  `json:"DisplayValue"`
 }
 
+type Location struct {
+	ID primitive.ObjectID `json:"id" bson:"_id"`
+	// TODO Add unique constraint to Name
+	Name        string `json:"name" bson:"name" example:"australia-southeast1"`
+	DisplayName string `json:"display_name" bson:"display_name" example:"Sydney, AU"`
+	Address     string `json:"address" bson:"address" example:"8.8.8.8:50051"`
+	// Flag to indicate whether TLS should be used
+	Secure    bool      `json:"secure" bson:"secure"`
+	Order     int32     `json:"order" bson:"order"`
+	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+}
+
 func GetAllReports() ([]Report, error) {
 	reports := []Report{}
-	collection := DB.Database("websu").Collection("reports")
+	collection := DB.Database(DatabaseName).Collection("reports")
 	c := context.TODO()
 	cursor, err := collection.Find(c, bson.D{})
 	if err != nil {
@@ -84,7 +100,7 @@ func NewReportFromRequest(rr *ReportRequest) *Report {
 
 func (report *Report) Insert() error {
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-	collection := DB.Database("websu").Collection("reports")
+	collection := DB.Database(DatabaseName).Collection("reports")
 	if _, err := collection.InsertOne(ctx, report); err != nil {
 		return err
 	}
@@ -95,7 +111,7 @@ func (report *Report) Delete() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
-	result, err := DB.Database("websu").Collection("reports").DeleteOne(context.TODO(), bson.M{"_id": report.ID}, nil)
+	result, err := DB.Database(DatabaseName).Collection("reports").DeleteOne(context.TODO(), bson.M{"_id": report.ID}, nil)
 	if err != nil {
 		return err
 	}
@@ -111,7 +127,7 @@ func (report *Report) Delete() error {
 
 func GetReportByObjectIDHex(hex string) (Report, error) {
 	var report Report
-	collection := DB.Database("websu").Collection("reports")
+	collection := DB.Database(DatabaseName).Collection("reports")
 	oid, err := primitive.ObjectIDFromHex(hex)
 	if err != nil {
 		return report, err
@@ -121,4 +137,68 @@ func GetReportByObjectIDHex(hex string) (Report, error) {
 		return report, err
 	}
 	return report, nil
+}
+
+func NewLocation() *Location {
+	l := new(Location)
+	l.ID = primitive.NewObjectID()
+	l.CreatedAt = time.Now()
+	return l
+}
+
+func (location *Location) Insert() error {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	collection := DB.Database(DatabaseName).Collection("locations")
+	if _, err := collection.InsertOne(ctx, location); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (location *Location) Delete() error {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	result, err := DB.Database(DatabaseName).Collection("locations").DeleteOne(context.TODO(), bson.M{"_id": location.ID}, nil)
+	if err != nil {
+		return err
+	}
+	if result.DeletedCount == 1 {
+		return nil
+	} else if result.DeletedCount == 0 {
+		return errors.New("Location with id " + location.ID.Hex() + " did not exist")
+	} else {
+		return errors.New("Multiple locations were deleted.")
+	}
+	return nil
+}
+
+func GetAllLocations() ([]Location, error) {
+	locations := []Location{}
+	collection := DB.Database(DatabaseName).Collection("locations")
+	c := context.TODO()
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{"order", 1}})
+	cursor, err := collection.Find(c, bson.D{}, findOptions)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(c, &locations); err != nil {
+		return nil, err
+	}
+	return locations, nil
+}
+
+func GetLocationByObjectIDHex(hex string) (Location, error) {
+	var location Location
+	collection := DB.Database(DatabaseName).Collection("locations")
+	oid, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		return location, err
+	}
+	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&location)
+	if err != nil {
+		return location, err
+	}
+	return location, nil
 }

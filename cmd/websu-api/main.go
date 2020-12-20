@@ -44,5 +44,6 @@ func main() {
 	a := api.NewApp()
 	a.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
 	api.CreateMongoClient(mongoURI)
+	a.ConnectLHLocations()
 	a.Run(listenAddress)
 }

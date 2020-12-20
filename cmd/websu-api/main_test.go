@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/golang/mock/gomock"
 	"github.com/websu-io/websu/pkg/api"
@@ -27,7 +28,12 @@ func TestMain(m *testing.M) {
 	}
 
 	api.CreateMongoClient("mongodb://localhost:27017")
+	api.DatabaseName = "websu-test"
 	code := m.Run()
+	ctx := context.TODO()
+	if err := api.DB.Database(api.DatabaseName).Drop(ctx); err != nil {
+		log.Fatalf("Error dropping test database %v: %v", api.DatabaseName, err)
+	}
 
 	cmd = exec.Command("docker-compose", "stop", "mongo")
 	if err := cmd.Run(); err != nil {
@@ -184,4 +190,71 @@ func TestDeleteReportNonExisting(t *testing.T) {
 	checkResponseCode(t, http.StatusBadRequest, r)
 	log.Printf("Response: %+v", r)
 
+}
+
+func TestGetLocationsEmpty(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/locations", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response)
+	if body := response.Body.String(); strings.TrimSpace(body) != "[]" {
+		t.Errorf("Expected an empty array as []. Got %s", body)
+	}
+}
+
+func TestCreateLocationsAndOrder(t *testing.T) {
+	body := []byte(`{
+		"address": "localhost:50051",
+		"secure": false,
+		"name": "local",
+		"display_name": "Local",
+		"order": 1
+	}`)
+	location := bytes.NewBuffer(body)
+	req, _ := http.NewRequest("POST", "/locations", location)
+	resp := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if body := resp.Body.String(); strings.Contains(body, "localhost:50051") != true {
+		t.Errorf("Expected body to contain localhost:50051. Got %s", body)
+	}
+
+	body = []byte(`{
+		"address": "test2:443",
+		"secure": true,
+		"name": "remote",
+		"display_name": "Remote",
+		"order": 3
+	}`)
+	location = bytes.NewBuffer(body)
+	req, _ = http.NewRequest("POST", "/locations", location)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if body := resp.Body.String(); strings.Contains(body, "test2:443") != true {
+		t.Errorf("Expected body to contain test2:443. Got %s", body)
+	}
+
+	body = []byte(`{
+		"address": "order2:443",
+		"secure": true,
+		"name": "remote",
+		"display_name": "Remote",
+		"order": 2
+	}`)
+	location = bytes.NewBuffer(body)
+	req, _ = http.NewRequest("POST", "/locations", location)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if body := resp.Body.String(); strings.Contains(body, "order2:443") != true {
+		t.Errorf("Expected body to contain order2:443. Got %s", body)
+	}
+
+	locations, err := api.GetAllLocations()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(locations) != 3 {
+		t.Errorf("Expected len(locations) = 1. Got len(locations) = %v", len(locations))
+	}
+	if locations[1].Address != "order2:443" {
+		t.Error("Expected order2 to be the 2nd element. Ordering seems to be wrong.")
+	}
 }

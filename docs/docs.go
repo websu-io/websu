@@ -30,22 +30,22 @@ var doc = `{
     "paths": {
         "/reports": {
             "post": {
-                "description": "Run a lighthouse audit to generate a report. The field ` + "`" + `raw_json` + "`" + ` contains the\nJSON output returned from lighthouse as a string. Note that ` + "`" + `raw_json` + "`" + ` field is\nonly returned during initial creation of the report.",
+                "description": "Add a new location from which reports can be generated",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Create a Lighthouse Report",
+                "summary": "Add a new location",
                 "parameters": [
                     {
-                        "description": "Lighthouse parameters to generate the report",
-                        "name": "ReportRequest",
+                        "description": "Details of the new location",
+                        "name": "Location",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.ReportRequest"
+                            "$ref": "#/definitions/api.Location"
                         }
                     }
                 ],
@@ -55,7 +55,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.Report"
+                                "$ref": "#/definitions/api.Location"
                             }
                         }
                     }
@@ -90,6 +90,37 @@ var doc = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "api.Location": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "8.8.8.8:50051"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string",
+                    "example": "Sydney, AU"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "description": "TODO Add unique constraint to Name",
+                    "type": "string",
+                    "example": "australia-southeast1"
+                },
+                "order": {
+                    "type": "integer"
+                },
+                "secure": {
+                    "description": "Flag to indicate whether TLS should be used",
+                    "type": "boolean"
                 }
             }
         },
@@ -133,6 +164,10 @@ var doc = `{
                 "form_factor": {
                     "type": "string",
                     "example": "desktop"
+                },
+                "location": {
+                    "type": "string",
+                    "example": "australia-southeast1"
                 },
                 "throughput_kbps": {
                     "type": "integer",

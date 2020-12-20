@@ -8,25 +8,24 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
 	"github.com/swaggo/http-swagger"
 	pb "github.com/websu-io/websu/pkg/lighthouse"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"log"
 	"net/http"
-	"os"
-	"path/filepath"
+	"runtime/debug"
 	"time"
 )
 
 type App struct {
-	Router           *mux.Router
-	LighthouseClient pb.LighthouseServiceClient
+	Router            *mux.Router
+	LighthouseClient  pb.LighthouseServiceClient
+	LighthouseClients map[string]pb.LighthouseServiceClient
 }
 
 func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseServiceClient {
 	var opts []grpc.DialOption
-
 	if secure {
 		creds := credentials.NewTLS(&tls.Config{
 			InsecureSkipVerify: true,
@@ -40,10 +39,10 @@ func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseService
 		}
 	}
 
-	log.Printf("Connecting to gRPC Service [%s]", address)
+	log.Infof("Connecting to gRPC Service [%s]", address)
 	conn, err := grpc.Dial(address, opts...)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
 	}
 	return pb.NewLighthouseServiceClient(conn)
 }
@@ -51,6 +50,7 @@ func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseService
 func NewApp() *App {
 	a := new(App)
 	a.SetupRoutes()
+	a.LighthouseClients = make(map[string]pb.LighthouseServiceClient)
 	return a
 }
 
@@ -61,9 +61,22 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/reports/{id}", a.getReport).Methods("GET")
 	a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
 	a.Router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
+	a.Router.HandleFunc("/locations", a.getLocations).Methods("GET")
+	a.Router.HandleFunc("/locations", a.createLocation).Methods("POST")
+	a.Router.HandleFunc("/locations/{id}", a.deleteLocation).Methods("DELETE")
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	a.Router.PathPrefix("/").Handler(spa)
 
+}
+func (a *App) ConnectLHLocations() {
+	locations, err := GetAllLocations()
+	if err != nil {
+		log.Errorf("Error getting locations while trying to connect: %v", err)
+	} else {
+		for _, location := range locations {
+			a.LighthouseClients[location.Name] = ConnectToLighthouseServer(location.Address, location.Secure)
+		}
+	}
 }
 
 func (a *App) Run(address string) {
@@ -74,7 +87,7 @@ func (a *App) Run(address string) {
 		ReadTimeout:  300 * time.Second,
 		WriteTimeout: 300 * time.Second,
 	}
-	log.Printf("Listening on %s", address)
+	log.Infof("Listening on %s", address)
 	log.Fatal(s.ListenAndServe())
 }
 
@@ -103,14 +116,15 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 	if err := decodeJSONBody(w, r, &reportRequest); err != nil {
 		var mr *malformedRequest
 		if errors.As(err, &mr) {
+			log.WithError(err).Error("Malformed Request during decoding JSON of createReport")
 			http.Error(w, mr.msg, mr.status)
 		} else {
-			log.Println(err.Error())
+			log.WithError(err).Error("Error decoding JSON")
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 		return
 	}
-	log.Printf("Decoded json from HTTP body. ReportRequest: %+v", reportRequest)
+	log.Infof("Decoded json from HTTP body. ReportRequest: %+v", reportRequest)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*45)
 	defer cancel()
 	if reportRequest.FormFactor == "" {
@@ -118,7 +132,7 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 	}
 	if reportRequest.FormFactor != "desktop" && reportRequest.FormFactor != "mobile" {
 		err := errors.New("Invalid form_factor, must be desktop or mobile")
-		log.Print(err)
+		log.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -138,21 +152,30 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		Url:     reportRequest.URL,
 		Options: lhOptions,
 	}
-	lhResult, err := a.LighthouseClient.Run(ctx, &lhRequest)
+	var lhClient pb.LighthouseServiceClient
+	if val, ok := a.LighthouseClients[reportRequest.Location]; ok {
+		lhClient = val
+	} else {
+		lhClient = a.LighthouseClient
+	}
+
+	lhResult, err := lhClient.Run(ctx, &lhRequest)
 	if err != nil {
-		log.Printf("could not run lighthouse: %v\n", err)
+		log.WithError(err).WithFields(log.Fields{
+			"lhRequest": fmt.Sprintf("%+v", lhRequest),
+		}).Error("Could not run lighthouse\n", string(debug.Stack()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	report := NewReportFromRequest(&reportRequest)
 	report.AuditResults, err = parseAuditResults(lhResult.GetStdout(), keys)
 	if err != nil {
-		log.Print("Error parsing audit results")
+		log.WithError(err).Error("Error parsing audit results")
 	}
 	report.PerformanceScore = parsePerformanceScore(lhResult.GetStdout())
 	report.RawJSON = string(lhResult.GetStdout())
 	if err := report.Insert(); err != nil {
-		log.Printf("unable to insert report: %v\n", err)
+		log.WithError(err).Error("unable to insert report")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -185,45 +208,57 @@ func (a *App) deleteReport(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&Report{})
 }
 
-// spaHandler implements the http.Handler interface, so we can use it
-// to respond to HTTP requests. The path to the static directory and
-// path to the index file within that static directory are used to
-// serve the SPA in the given static directory.
-type spaHandler struct {
-	staticPath string
-	indexPath  string
-}
-
-// ServeHTTP inspects the URL path to locate a file within the static dir
-// on the SPA handler. If a file is found, it will be served. If not, the
-// file located at the index path on the SPA handler will be served. This
-// is suitable behavior for serving an SPA (single page application).
-func (h spaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// get the absolute path to prevent directory traversal
-	path, err := filepath.Abs(r.URL.Path)
+func (a *App) getLocations(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	locations, err := GetAllLocations()
 	if err != nil {
-		// if we failed to get the absolute path respond with a 400 bad request
-		// and stop
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	json.NewEncoder(w).Encode(&locations)
+}
 
-	// prepend the path with the path to the static directory
-	path = filepath.Join(h.staticPath, path)
-
-	// check whether a file exists at the given path
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		// file does not exist, serve index.html
-		http.ServeFile(w, r, filepath.Join(h.staticPath, h.indexPath))
-		return
-	} else if err != nil {
-		// if we got an error (that wasn't that the file doesn't exist) stating the
-		// file, return a 500 internal server error and stop
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+// @Summary Add a new location
+// @Description Add a new location from which reports can be generated
+// @Accept  json
+// @Param Location body api.Location true "Details of the new location"
+// @Produce  json
+// @Success 200 {array} api.Location
+// @Router /reports [post]
+func (a *App) createLocation(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	location := NewLocation()
+	if err := decodeJSONBody(w, r, &location); err != nil {
+		var mr *malformedRequest
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			log.WithError(err).Error("Error decoding location json")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
 		return
 	}
+	log.Infof("Decoded json from HTTP body. Location: %+v", location)
+	location.Insert()
+	a.ConnectLHLocations()
+	json.NewEncoder(w).Encode(&location)
+}
 
-	// otherwise, use http.FileServer to serve the static dir
-	http.FileServer(http.Dir(h.staticPath)).ServeHTTP(w, r)
+func (a *App) deleteLocation(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	location, err := GetLocationByObjectIDHex(params["id"])
+	log.WithFields(log.Fields{
+		"location": location,
+		"params":   params,
+	}).Info("Deleting location")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := location.Delete(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(&Report{})
 }
