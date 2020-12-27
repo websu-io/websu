@@ -59,7 +59,7 @@ Deploy lighthouse-server on Cloud Run:
 ```
 gcloud run deploy lighthouse-server \
   --image us-central1-docker.pkg.dev/$PROJECT_ID/websu/lighthouse-server:latest \
-  --memory 512Mi --platform managed --port 50051 --timeout 60s --concurrency 1 \
+  --memory 1024Mi --platform managed --port 50051 --timeout 60s --concurrency 1 \
   --region us-central1 --set-env-vars="USE_DOCKER=false" --allow-unauthenticated
 ```
 
