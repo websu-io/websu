@@ -9,6 +9,7 @@ through a simple HTTP REST API to run Lighthouse. The react based frontend
 
 ## Features
 - Run lighthouse-as-a-service through a simple HTTP REST API
+- Run Lighthouse from multiple locations around the globe
 - Retrieve a list of previous results
 - Web UI to host your own internal Lighthouse service
 - Ability to compare results (TODO)
@@ -39,7 +40,7 @@ Cloud Run is a great cost efficient option to deploy a production ready
 instance of Websu. Cloud Run takes care of automatically scaling and launching
 Lighthouse jobs. In addition the free limits of Cloud Run managed are very
 generous. The public [https://websu.io](https://websu.io) instance is running
-on Cloud Run.
+on Cloud Run. Run the steps below to deploy to Cloud Run.
 
 Push the images to Google Cloud Artifact Registry:
 ```
