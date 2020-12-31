@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	libredis "github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 	"github.com/swaggo/http-swagger"
+	mhttp "github.com/ulule/limiter/v3/drivers/middleware/stdlib"
 	pb "github.com/websu-io/websu/pkg/lighthouse"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -18,10 +20,13 @@ import (
 	"time"
 )
 
+var DefaultRateLimit = "10-M"
+
 type App struct {
 	Router            *mux.Router
 	LighthouseClient  pb.LighthouseServiceClient
 	LighthouseClients map[string]pb.LighthouseServiceClient
+	RedisClient       *libredis.Client
 }
 
 func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseServiceClient {
@@ -47,17 +52,36 @@ func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseService
 	return pb.NewLighthouseServiceClient(conn)
 }
 
-func NewApp() *App {
+type AppOption func(c *App)
+
+func WithRedis(redisURL string) AppOption {
+	return func(a *App) {
+		a.RedisClient = CreateRedisClient(redisURL)
+	}
+}
+
+func NewApp(opts ...AppOption) *App {
 	a := new(App)
+	for _, opt := range opts {
+		opt(a)
+	}
 	a.SetupRoutes()
 	a.LighthouseClients = make(map[string]pb.LighthouseServiceClient)
 	return a
 }
 
 func (a *App) SetupRoutes() {
+	var limiter *mhttp.Middleware
+	if a.RedisClient != nil {
+		log.Info("Using redis based rate limiter")
+		limiter = CreateRedisRateLimiter(DefaultRateLimit, "default-limiter", a.RedisClient)
+	} else {
+		log.Info("Using memory based rate limiter")
+		limiter = CreateMemRateLimiter(DefaultRateLimit)
+	}
 	a.Router = mux.NewRouter()
 	a.Router.HandleFunc("/reports", a.getReports).Methods("GET")
-	a.Router.HandleFunc("/reports", a.createReport).Methods("POST")
+	a.Router.Handle("/reports", limiter.Handler(http.HandlerFunc(a.createReport))).Methods("POST")
 	a.Router.HandleFunc("/reports/{id}", a.getReport).Methods("GET")
 	a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
 	a.Router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
@@ -66,8 +90,8 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/locations/{id}", a.deleteLocation).Methods("DELETE")
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	a.Router.PathPrefix("/").Handler(spa)
-
 }
+
 func (a *App) ConnectLHLocations() {
 	locations, err := GetAllLocations()
 	if err != nil {

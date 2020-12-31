@@ -20,13 +20,17 @@ import (
 var a *api.App
 
 func TestMain(m *testing.M) {
-	a = api.NewApp()
-
 	cmd := exec.Command("docker-compose", "up", "-d", "mongo")
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Starting mongo docker container had an error: %v", err)
 	}
+	cmd = exec.Command("docker", "run", "-p", "127.0.0.1:6379:6379",
+		"--name", "websu-redis", "-d", "redis")
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Starting redis docker container had an error: %v", err)
+	}
 
+	a = api.NewApp()
 	api.CreateMongoClient("mongodb://localhost:27017")
 	api.DatabaseName = "websu-test"
 	code := m.Run()
@@ -38,6 +42,15 @@ func TestMain(m *testing.M) {
 	cmd = exec.Command("docker-compose", "stop", "mongo")
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Stopping mongo docker container had an error: %v", err)
+	}
+
+	cmd = exec.Command("docker", "stop", "websu-redis")
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Stopping websu-redis docker container had an error: %v", err)
+	}
+	cmd = exec.Command("docker", "rm", "websu-redis")
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Deleting websu-redis docker container had an error: %v", err)
 	}
 
 	os.Exit(code)
@@ -55,7 +68,8 @@ func checkResponseCode(t *testing.T, expected int, response *httptest.ResponseRe
 	}
 }
 
-func dbClearReports() {
+func cleanUpAfterTest() {
+
 	reports, err := api.GetAllReports()
 	if err != nil {
 		log.Fatal(err)
@@ -63,10 +77,13 @@ func dbClearReports() {
 	for _, report := range reports {
 		report.Delete()
 	}
+	a = api.NewApp()
+	api.CreateMongoClient("mongodb://localhost:27017")
+	api.DatabaseName = "websu-test"
 }
 
 func TestGetReportsEmpty(t *testing.T) {
-	dbClearReports()
+	cleanUpAfterTest()
 	req, _ := http.NewRequest("GET", "/reports", nil)
 	response := executeRequest(req)
 	checkResponseCode(t, http.StatusOK, response)
@@ -98,7 +115,44 @@ func TestCreateReport(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "google.com") != true {
 		t.Errorf("Expected body to contain google.com. Got %s", body)
 	}
-	dbClearReports()
+	cleanUpAfterTest()
+}
+
+func TestCreateReportRateLimit(t *testing.T) {
+	body := []byte(`{"URL": "https://www.google.com"}`)
+	var mock bool
+	var responseCode int
+	for i := 1; i < 12; i++ {
+		if i >= 11 {
+			mock = false
+			responseCode = http.StatusTooManyRequests
+		} else {
+			mock = true
+			responseCode = http.StatusOK
+		}
+		response := createReport(t, body, mock)
+		checkResponseCode(t, responseCode, response)
+	}
+	cleanUpAfterTest()
+}
+
+func TestCreateReportRateLimitRedis(t *testing.T) {
+	a = api.NewApp(api.WithRedis("redis://localhost:6379/0"))
+	body := []byte(`{"URL": "https://www.google.com"}`)
+	var mock bool
+	var responseCode int
+	for i := 1; i < 12; i++ {
+		if i >= 11 {
+			mock = false
+			responseCode = http.StatusTooManyRequests
+		} else {
+			mock = true
+			responseCode = http.StatusOK
+		}
+		response := createReport(t, body, mock)
+		checkResponseCode(t, responseCode, response)
+	}
+	cleanUpAfterTest()
 }
 
 func TestCreateReportFFDesktop(t *testing.T) {
@@ -111,7 +165,7 @@ func TestCreateReportFFDesktop(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "\"form_factor\":\"desktop\"") != true {
 		t.Errorf("Expected body to form_factor: 'desktop'. Got %s", body)
 	}
-	dbClearReports()
+	cleanUpAfterTest()
 }
 
 func TestCreateReportFFMobile(t *testing.T) {
@@ -124,7 +178,7 @@ func TestCreateReportFFMobile(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "\"form_factor\":\"mobile\"") != true {
 		t.Errorf("Expected body to form_factor: 'mobile'. Got %s", body)
 	}
-	dbClearReports()
+	cleanUpAfterTest()
 }
 
 func TestCreateReportFFMInvalid(t *testing.T) {
@@ -134,21 +188,21 @@ func TestCreateReportFFMInvalid(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "Invalid form_factor") != true {
 		t.Errorf("Expected body to contain Invalid form_factor. Got %s", body)
 	}
-	dbClearReports()
+	cleanUpAfterTest()
 }
 
 func TestCreateReportThroughputKbpsValid(t *testing.T) {
 	body := []byte(`{"url": "https://www.google.com", "throughput_kbps": 50000}`)
 	response := createReport(t, body, true)
 	checkResponseCode(t, http.StatusOK, response)
-	dbClearReports()
+	cleanUpAfterTest()
 }
 
 func TestCreateReportThroughputKbpsInvalid(t *testing.T) {
 	body := []byte(`{"url": "https://www.google.com", "throughput_kbps": "not a number"}`)
 	response := createReport(t, body, false)
 	checkResponseCode(t, http.StatusBadRequest, response)
-	dbClearReports()
+	cleanUpAfterTest()
 }
 
 func TestCreateGetandDeleteReport(t *testing.T) {
@@ -172,7 +226,7 @@ func TestCreateGetandDeleteReport(t *testing.T) {
 	r = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, r)
 
-	dbClearReports()
+	cleanUpAfterTest()
 }
 
 func TestDeleteReportNonExisting(t *testing.T) {
