@@ -13,6 +13,7 @@ var (
 	lighthouseServer       = "localhost:50051"
 	lighthouseServerSecure = false
 	apiHost                = "localhost:8000"
+	redisURL               = ""
 )
 
 // @title Websu API
@@ -37,11 +38,18 @@ func main() {
 	flag.BoolVar(&lighthouseServerSecure, "lighthouse-server-secure",
 		cmd.GetenvBool("LIGHTHOUSE_SERVER_SECURE", lighthouseServerSecure),
 		"Boolean flag to indicate whether TLS should be used to connect to lighthouse server. Default: false")
+	flag.StringVar(&redisURL, "redis-url",
+		cmd.GetenvString("REDIS_URL", redisURL),
+		`The Redis connection string to use. This setting is optional and by default
+local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 	flag.Parse()
 
 	docs.SwaggerInfo.Host = apiHost
-
-	a := api.NewApp()
+	options := make([]api.AppOption, 0)
+	if redisURL != "" {
+		options = append(options, api.WithRedis(redisURL))
+	}
+	a := api.NewApp(options...)
 	a.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
 	api.CreateMongoClient(mongoURI)
 	a.ConnectLHLocations()
