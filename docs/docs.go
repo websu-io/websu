@@ -30,22 +30,22 @@ var doc = `{
     "paths": {
         "/reports": {
             "post": {
-                "description": "Add a new location from which reports can be generated",
+                "description": "Run a lighthouse audit to generate a report. The field ` + "`" + `raw_json` + "`" + ` contains the\nJSON output returned from lighthouse as a string.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Add a new location",
+                "summary": "Create a Lighthouse Report",
                 "parameters": [
                     {
-                        "description": "Details of the new location",
-                        "name": "Location",
+                        "description": "Lighthouse parameters to generate the report",
+                        "name": "ReportRequest",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.Location"
+                            "$ref": "#/definitions/api.ReportRequest"
                         }
                     }
                 ],
@@ -55,7 +55,7 @@ var doc = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/api.Location"
+                                "$ref": "#/definitions/api.Report"
                             }
                         }
                     }
@@ -90,36 +90,6 @@ var doc = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "api.Location": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "example": "8.8.8.8:50051"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "display_name": {
-                    "type": "string",
-                    "example": "Sydney, AU"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "australia-southeast1"
-                },
-                "order": {
-                    "type": "integer"
-                },
-                "secure": {
-                    "description": "Flag to indicate whether TLS should be used",
-                    "type": "boolean"
                 }
             }
         },

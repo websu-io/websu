@@ -241,13 +241,6 @@ func (a *App) getLocations(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(&locations)
 }
 
-// @Summary Add a new location
-// @Description Add a new location from which reports can be generated
-// @Accept  json
-// @Param Location body api.Location true "Details of the new location"
-// @Produce  json
-// @Success 200 {array} api.Location
-// @Router /reports [post]
 func (a *App) createLocation(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	location := NewLocation()
