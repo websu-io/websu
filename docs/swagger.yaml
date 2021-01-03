@@ -32,7 +32,6 @@ definitions:
       id:
         type: string
       name:
-        description: TODO Add unique constraint to Name
         example: australia-southeast1
         type: string
       order:

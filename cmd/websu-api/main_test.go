@@ -274,7 +274,7 @@ func TestCreateLocationsAndOrder(t *testing.T) {
 	body = []byte(`{
 		"address": "test2:443",
 		"secure": true,
-		"name": "remote",
+		"name": "test2",
 		"display_name": "Remote",
 		"order": 3
 	}`)
@@ -289,7 +289,7 @@ func TestCreateLocationsAndOrder(t *testing.T) {
 	body = []byte(`{
 		"address": "order2:443",
 		"secure": true,
-		"name": "remote",
+		"name": "test3",
 		"display_name": "Remote",
 		"order": 2
 	}`)
@@ -311,4 +311,32 @@ func TestCreateLocationsAndOrder(t *testing.T) {
 	if locations[1].Address != "order2:443" {
 		t.Error("Expected order2 to be the 2nd element. Ordering seems to be wrong.")
 	}
+}
+
+func TestCreateLocationsDuplicateName(t *testing.T) {
+	body := []byte(`{
+		"address": "localhost:50051",
+		"secure": false,
+		"name": "unique123",
+		"display_name": "Local",
+		"order": 1
+	}`)
+	location := bytes.NewBuffer(body)
+	req, _ := http.NewRequest("POST", "/locations", location)
+	resp := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if body := resp.Body.String(); strings.Contains(body, "localhost:50051") != true {
+		t.Errorf("Expected body to contain localhost:50051. Got %s", body)
+	}
+	body = []byte(`{
+		"address": "localhost:50051",
+		"secure": false,
+		"name": "unique123",
+		"display_name": "Local",
+		"order": 1
+	}`)
+	location = bytes.NewBuffer(body)
+	req, _ = http.NewRequest("POST", "/locations", location)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusInternalServerError, resp)
 }

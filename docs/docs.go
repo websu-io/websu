@@ -111,7 +111,6 @@ var doc = `{
                     "type": "string"
                 },
                 "name": {
-                    "description": "TODO Add unique constraint to Name",
                     "type": "string",
                     "example": "australia-southeast1"
                 },

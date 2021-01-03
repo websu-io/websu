@@ -262,7 +262,11 @@ func (a *App) createLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Infof("Decoded json from HTTP body. Location: %+v", location)
-	location.Insert()
+	if err := location.Insert(); err != nil {
+		log.WithError(err).Error("Error creating location")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	a.ConnectLHLocations()
 	json.NewEncoder(w).Encode(&location)
 }

@@ -27,6 +27,7 @@ func CreateMongoClient(mongoURI string) {
 	} else {
 		log.Info("Connected to Database")
 	}
+	CreateMongoIndexes()
 }
 
 type ReportRequest struct {
@@ -60,15 +61,30 @@ type AuditResult struct {
 }
 
 type Location struct {
-	ID primitive.ObjectID `json:"id" bson:"_id"`
-	// TODO Add unique constraint to Name
-	Name        string `json:"name" bson:"name" example:"australia-southeast1"`
-	DisplayName string `json:"display_name" bson:"display_name" example:"Sydney, AU"`
-	Address     string `json:"address" bson:"address" example:"8.8.8.8:50051"`
+	ID          primitive.ObjectID `json:"id" bson:"_id"`
+	Name        string             `json:"name" bson:"name" example:"australia-southeast1"`
+	DisplayName string             `json:"display_name" bson:"display_name" example:"Sydney, AU"`
+	Address     string             `json:"address" bson:"address" example:"8.8.8.8:50051"`
 	// Flag to indicate whether TLS should be used
 	Secure    bool      `json:"secure" bson:"secure"`
 	Order     int32     `json:"order" bson:"order"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
+}
+
+func CreateMongoIndexes() {
+	mod := mongo.IndexModel{
+		Keys:    bson.M{"name": 1},
+		Options: options.Index().SetUnique(true),
+	}
+	collection := DB.Database(DatabaseName).Collection("locations")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	name, err := collection.Indexes().CreateOne(ctx, mod)
+	if err != nil {
+		log.WithError(err).Error("Error creating mongoDB indexes")
+	}
+	log.WithField("name", name).Info("Created index")
 }
 
 func GetAllReports() ([]Report, error) {
