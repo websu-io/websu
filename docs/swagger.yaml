@@ -57,6 +57,7 @@ definitions:
       performance_score:
         type: number
       raw_json:
+        description: RawJSON contains the lighthouse JSON result
         type: string
       throughput_kbps:
         example: 50000

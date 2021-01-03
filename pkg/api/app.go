@@ -127,8 +127,7 @@ func (a *App) getReports(w http.ResponseWriter, r *http.Request) {
 
 // @Summary Create a Lighthouse Report
 // @Description Run a lighthouse audit to generate a report. The field `raw_json` contains the
-// @Description JSON output returned from lighthouse as a string. Note that `raw_json` field is
-// @Description only returned during initial creation of the report.
+// @Description JSON output returned from lighthouse as a string.
 // @Accept  json
 // @Param ReportRequest body api.ReportRequest true "Lighthouse parameters to generate the report"
 // @Produce  json

@@ -147,6 +147,7 @@ var doc = `{
                     "type": "number"
                 },
                 "raw_json": {
+                    "description": "RawJSON contains the lighthouse JSON result",
                     "type": "string"
                 },
                 "throughput_kbps": {

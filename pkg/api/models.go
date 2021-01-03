@@ -37,11 +37,12 @@ type ReportRequest struct {
 }
 
 type Report struct {
-	ID               primitive.ObjectID     `json:"id" bson:"_id"`
-	URL              string                 `json:"url" bson:"url"`
-	FormFactor       string                 `json:"form_factor" bson:"form_factor" example:"desktop"`
-	ThroughputKbps   int64                  `json:"throughput_kbps" example:"50000"`
-	RawJSON          string                 `json:"raw_json" bson:"-"`
+	ID             primitive.ObjectID `json:"id" bson:"_id"`
+	URL            string             `json:"url" bson:"url"`
+	FormFactor     string             `json:"form_factor" bson:"form_factor" example:"desktop"`
+	ThroughputKbps int64              `json:"throughput_kbps" example:"50000"`
+	// RawJSON contains the lighthouse JSON result
+	RawJSON          string                 `json:"raw_json" bson:"raw_json"`
 	CreatedAt        time.Time              `json:"created_at" bson:"created_at"`
 	PerformanceScore float32                `json:"performance_score" bson:"performance_score"`
 	AuditResults     map[string]AuditResult `json:"audit_results" bson:"audit_results"`
