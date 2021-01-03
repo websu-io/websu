@@ -90,11 +90,17 @@
                     "type": "string"
                 },
                 "form_factor": {
+                    "description": "Optional parameter, possible values are desktop or mobile. If unset will default to desktop",
                     "type": "string",
                     "example": "desktop"
                 },
                 "id": {
                     "type": "string"
+                },
+                "location": {
+                    "description": "Optional parameter, default location will be used if not set",
+                    "type": "string",
+                    "example": "australia-southeast1"
                 },
                 "performance_score": {
                     "type": "number"
@@ -104,11 +110,14 @@
                     "type": "string"
                 },
                 "throughput_kbps": {
+                    "description": "Optional parameter, by default will be set to 1000 if omitted",
                     "type": "integer",
                     "example": 50000
                 },
                 "url": {
-                    "type": "string"
+                    "description": "Required parameter the URL of the website",
+                    "type": "string",
+                    "example": "https://www.google.com"
                 }
             }
         },
@@ -116,18 +125,22 @@
             "type": "object",
             "properties": {
                 "form_factor": {
+                    "description": "Optional parameter, possible values are desktop or mobile. If unset will default to desktop",
                     "type": "string",
                     "example": "desktop"
                 },
                 "location": {
+                    "description": "Optional parameter, default location will be used if not set",
                     "type": "string",
                     "example": "australia-southeast1"
                 },
                 "throughput_kbps": {
+                    "description": "Optional parameter, by default will be set to 1000 if omitted",
                     "type": "integer",
                     "example": 50000
                 },
                 "url": {
+                    "description": "Required parameter the URL of the website",
                     "type": "string",
                     "example": "https://www.google.com"
                 }

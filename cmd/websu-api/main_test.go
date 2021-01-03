@@ -20,7 +20,7 @@ import (
 var a *api.App
 
 func TestMain(m *testing.M) {
-	cmd := exec.Command("docker-compose", "up", "-d", "mongo")
+	cmd := exec.Command("docker", "run", "-d", "--name", "mongo-test", "-p", "127.0.0.1:27018:27017", "mongo")
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Starting mongo docker container had an error: %v", err)
 	}
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	}
 
 	a = api.NewApp()
-	api.CreateMongoClient("mongodb://localhost:27017")
+	api.CreateMongoClient("mongodb://localhost:27018")
 	api.DatabaseName = "websu-test"
 	code := m.Run()
 	ctx := context.TODO()
@@ -39,9 +39,13 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error dropping test database %v: %v", api.DatabaseName, err)
 	}
 
-	cmd = exec.Command("docker-compose", "stop", "mongo")
+	cmd = exec.Command("docker", "stop", "mongo-test")
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Stopping mongo docker container had an error: %v", err)
+	}
+	cmd = exec.Command("docker", "rm", "mongo-test")
+	if err := cmd.Run(); err != nil {
+		log.Fatalf("Deleting mongo docker container had an error: %v", err)
 	}
 
 	cmd = exec.Command("docker", "stop", "websu-redis")

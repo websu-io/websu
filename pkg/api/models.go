@@ -31,17 +31,19 @@ func CreateMongoClient(mongoURI string) {
 }
 
 type ReportRequest struct {
-	URL            string `json:"url" example:"https://www.google.com"`
-	FormFactor     string `json:"form_factor" example:"desktop"`
-	ThroughputKbps int64  `json:"throughput_kbps" example:"50000"`
-	Location       string `json:"location" example:"australia-southeast1"`
+	// Required parameter the URL of the website
+	URL string `json:"url" example:"https://www.google.com"`
+	// Optional parameter, possible values are desktop or mobile. If unset will default to desktop
+	FormFactor string `json:"form_factor" example:"desktop"`
+	// Optional parameter, by default will be set to 1000 if omitted
+	ThroughputKbps int64 `json:"throughput_kbps" example:"50000"`
+	// Optional parameter, default location will be used if not set
+	Location string `json:"location" example:"australia-southeast1"`
 }
 
 type Report struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id"`
-	URL            string             `json:"url" bson:"url"`
-	FormFactor     string             `json:"form_factor" bson:"form_factor" example:"desktop"`
-	ThroughputKbps int64              `json:"throughput_kbps" example:"50000"`
+	ID primitive.ObjectID `json:"id" bson:"_id"`
+	ReportRequest
 	// RawJSON contains the lighthouse JSON result
 	RawJSON          string                 `json:"raw_json" bson:"raw_json"`
 	CreatedAt        time.Time              `json:"created_at" bson:"created_at"`
