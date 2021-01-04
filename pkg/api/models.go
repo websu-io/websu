@@ -3,12 +3,16 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/jinzhu/copier"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"reflect"
 	"time"
 )
 
@@ -39,6 +43,27 @@ type ReportRequest struct {
 	ThroughputKbps int64 `json:"throughput_kbps" example:"50000"`
 	// Optional parameter, default location will be used if not set
 	Location string `json:"location" example:"australia-southeast1"`
+}
+
+func checkLocation(value interface{}) error {
+	s, _ := value.(string)
+	if s == "" {
+		return nil
+	}
+	if _, ok := LighthouseClients[s]; ok == false {
+		return fmt.Errorf("Specified location doesn't exist. Possible values are: %v",
+			reflect.ValueOf(LighthouseClients).MapKeys())
+	}
+	return nil
+}
+
+func (r ReportRequest) Validate() error {
+	return validation.ValidateStruct(&r,
+		validation.Field(&r.URL, validation.Required, is.URL),
+		validation.Field(&r.FormFactor, validation.In("desktop", "mobile")),
+		validation.Field(&r.ThroughputKbps, validation.Min(1000), validation.Max(500000)),
+		validation.Field(&r.Location, validation.By(checkLocation)),
+	)
 }
 
 type Report struct {

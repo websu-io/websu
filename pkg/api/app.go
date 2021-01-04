@@ -20,13 +20,15 @@ import (
 	"time"
 )
 
-var DefaultRateLimit = "10-M"
-
-type App struct {
-	Router            *mux.Router
+var (
+	DefaultRateLimit  = "10-M"
 	LighthouseClient  pb.LighthouseServiceClient
 	LighthouseClients map[string]pb.LighthouseServiceClient
-	RedisClient       *libredis.Client
+)
+
+type App struct {
+	Router      *mux.Router
+	RedisClient *libredis.Client
 }
 
 func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseServiceClient {
@@ -52,6 +54,17 @@ func ConnectToLighthouseServer(address string, secure bool) pb.LighthouseService
 	return pb.NewLighthouseServiceClient(conn)
 }
 
+func ConnectLHLocations() {
+	locations, err := GetAllLocations()
+	if err != nil {
+		log.Errorf("Error getting locations while trying to connect: %v", err)
+	} else {
+		for _, location := range locations {
+			LighthouseClients[location.Name] = ConnectToLighthouseServer(location.Address, location.Secure)
+		}
+	}
+}
+
 type AppOption func(c *App)
 
 func WithRedis(redisURL string) AppOption {
@@ -66,7 +79,7 @@ func NewApp(opts ...AppOption) *App {
 		opt(a)
 	}
 	a.SetupRoutes()
-	a.LighthouseClients = make(map[string]pb.LighthouseServiceClient)
+	LighthouseClients = make(map[string]pb.LighthouseServiceClient)
 	return a
 }
 
@@ -90,17 +103,6 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/locations/{id}", a.deleteLocation).Methods("DELETE")
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	a.Router.PathPrefix("/").Handler(spa)
-}
-
-func (a *App) ConnectLHLocations() {
-	locations, err := GetAllLocations()
-	if err != nil {
-		log.Errorf("Error getting locations while trying to connect: %v", err)
-	} else {
-		for _, location := range locations {
-			a.LighthouseClients[location.Name] = ConnectToLighthouseServer(location.Address, location.Secure)
-		}
-	}
 }
 
 func (a *App) Run(address string) {
@@ -148,16 +150,13 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Infof("Decoded json from HTTP body. ReportRequest: %+v", reportRequest)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*45)
-	defer cancel()
-	if reportRequest.FormFactor == "" {
-		reportRequest.FormFactor = "desktop"
-	}
-	if reportRequest.FormFactor != "desktop" && reportRequest.FormFactor != "mobile" {
-		err := errors.New("Invalid form_factor, must be desktop or mobile")
-		log.Error(err)
+	if err := reportRequest.Validate(); err != nil {
+		log.WithError(err).WithField("reportRequest", reportRequest).Info("Unable to validate ReportRequest")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+	if reportRequest.FormFactor == "" {
+		reportRequest.FormFactor = "desktop"
 	}
 	if reportRequest.ThroughputKbps < 1000 {
 		reportRequest.ThroughputKbps = 1000
@@ -176,12 +175,14 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		Options: lhOptions,
 	}
 	var lhClient pb.LighthouseServiceClient
-	if val, ok := a.LighthouseClients[reportRequest.Location]; ok {
+	if val, ok := LighthouseClients[reportRequest.Location]; ok {
 		lhClient = val
 	} else {
-		lhClient = a.LighthouseClient
+		lhClient = LighthouseClient
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*45)
+	defer cancel()
 	lhResult, err := lhClient.Run(ctx, &lhRequest)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{
@@ -260,7 +261,7 @@ func (a *App) createLocation(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.ConnectLHLocations()
+	ConnectLHLocations()
 	json.NewEncoder(w).Encode(&location)
 }
 

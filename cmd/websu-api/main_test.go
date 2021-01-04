@@ -20,43 +20,19 @@ import (
 var a *api.App
 
 func TestMain(m *testing.M) {
-	cmd := exec.Command("docker", "run", "-d", "--name", "mongo-test", "-p", "127.0.0.1:27018:27017", "mongo")
+	cmd := exec.Command("docker-compose", "up", "-d", "mongo")
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("Starting mongo docker container had an error: %v", err)
 	}
-	cmd = exec.Command("docker", "run", "-p", "127.0.0.1:6379:6379",
-		"--name", "websu-redis", "-d", "redis")
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("Starting redis docker container had an error: %v", err)
-	}
 
 	a = api.NewApp()
-	api.CreateMongoClient("mongodb://localhost:27018")
+	api.CreateMongoClient("mongodb://localhost:27017")
 	api.DatabaseName = "websu-test"
 	code := m.Run()
 	ctx := context.TODO()
 	if err := api.DB.Database(api.DatabaseName).Drop(ctx); err != nil {
 		log.Fatalf("Error dropping test database %v: %v", api.DatabaseName, err)
 	}
-
-	cmd = exec.Command("docker", "stop", "mongo-test")
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("Stopping mongo docker container had an error: %v", err)
-	}
-	cmd = exec.Command("docker", "rm", "mongo-test")
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("Deleting mongo docker container had an error: %v", err)
-	}
-
-	cmd = exec.Command("docker", "stop", "websu-redis")
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("Stopping websu-redis docker container had an error: %v", err)
-	}
-	cmd = exec.Command("docker", "rm", "websu-redis")
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("Deleting websu-redis docker container had an error: %v", err)
-	}
-
 	os.Exit(code)
 }
 
@@ -100,7 +76,7 @@ func createReport(t *testing.T, body []byte, mockLighthouseServer bool) *httptes
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockLightHouseClient := mocks.NewMockLighthouseServiceClient(ctrl)
-	a.LighthouseClient = mockLightHouseClient
+	api.LighthouseClient = mockLightHouseClient
 	report := bytes.NewBuffer(body)
 	req, _ := http.NewRequest("POST", "/reports", report)
 	if mockLighthouseServer {
@@ -123,25 +99,6 @@ func TestCreateReport(t *testing.T) {
 }
 
 func TestCreateReportRateLimit(t *testing.T) {
-	body := []byte(`{"URL": "https://www.google.com"}`)
-	var mock bool
-	var responseCode int
-	for i := 1; i < 12; i++ {
-		if i >= 11 {
-			mock = false
-			responseCode = http.StatusTooManyRequests
-		} else {
-			mock = true
-			responseCode = http.StatusOK
-		}
-		response := createReport(t, body, mock)
-		checkResponseCode(t, responseCode, response)
-	}
-	cleanUpAfterTest()
-}
-
-func TestCreateReportRateLimitRedis(t *testing.T) {
-	a = api.NewApp(api.WithRedis("redis://localhost:6379/0"))
 	body := []byte(`{"URL": "https://www.google.com"}`)
 	var mock bool
 	var responseCode int
@@ -189,8 +146,9 @@ func TestCreateReportFFMInvalid(t *testing.T) {
 	body := []byte(`{"url": "https://www.google.com", "form_factor": "invalid"}`)
 	response := createReport(t, body, false)
 	checkResponseCode(t, http.StatusBadRequest, response)
-	if body := response.Body.String(); strings.Contains(body, "Invalid form_factor") != true {
-		t.Errorf("Expected body to contain Invalid form_factor. Got %s", body)
+	expected := "form_factor: must be a valid value"
+	if body := response.Body.String(); strings.Contains(body, expected) != true {
+		t.Errorf("Expected body to contain %s. Got %s", expected, body)
 	}
 	cleanUpAfterTest()
 }

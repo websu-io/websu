@@ -50,8 +50,8 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 		options = append(options, api.WithRedis(redisURL))
 	}
 	a := api.NewApp(options...)
-	a.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
+	api.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
 	api.CreateMongoClient(mongoURI)
-	a.ConnectLHLocations()
+	api.ConnectLHLocations()
 	a.Run(listenAddress)
 }
