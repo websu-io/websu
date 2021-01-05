@@ -36,13 +36,13 @@ func CreateMongoClient(mongoURI string) {
 
 type ReportRequest struct {
 	// Required parameter the URL of the website
-	URL string `json:"url" example:"https://www.google.com"`
+	URL string `json:"url" bson:"url" example:"https://www.google.com"`
 	// Optional parameter, possible values are desktop or mobile. If unset will default to desktop
-	FormFactor string `json:"form_factor" example:"desktop"`
+	FormFactor string `json:"form_factor" bson:"form_factor" example:"desktop"`
 	// Optional parameter, by default will be set to 1000 if omitted
-	ThroughputKbps int64 `json:"throughput_kbps" example:"50000"`
+	ThroughputKbps int64 `json:"throughput_kbps" bson:"thoughput_kbps" example:"50000"`
 	// Optional parameter, default location will be used if not set
-	Location string `json:"location" example:"australia-southeast1"`
+	Location string `json:"location" bson:"location" example:"australia-southeast1"`
 }
 
 func checkLocation(value interface{}) error {
