@@ -322,3 +322,81 @@ func TestCreateLocationsDuplicateName(t *testing.T) {
 	resp = executeRequest(req)
 	checkResponseCode(t, http.StatusInternalServerError, resp)
 }
+
+func TestGetScheduledReportsEmpty(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/scheduled-reports", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response)
+	if body := response.Body.String(); strings.TrimSpace(body) != "[]" {
+		t.Errorf("Expected an empty array as []. Got %s", body)
+	}
+}
+
+func TestCreateScheduledReportAndDelete(t *testing.T) {
+	body := []byte(`{
+		"url": "https://www.google.com",
+		"schedule": "daily"
+	}`)
+	srJson := bytes.NewBuffer(body)
+	req, _ := http.NewRequest("POST", "/scheduled-reports", srJson)
+	resp := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if body := resp.Body.String(); strings.Contains(body, "https://www.google.com") != true {
+		t.Errorf("Expected body to contain https://www.google.com. Got %s", body)
+	}
+
+	var sr api.ScheduledReport
+	if err := json.NewDecoder(resp.Body).Decode(&sr); err != nil {
+		t.Errorf("Error: %s. Json decoding body: %s\n", err, resp.Body)
+	}
+	var srs []api.ScheduledReport
+	req, _ = http.NewRequest("GET", "/scheduled-reports", nil)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if err := json.NewDecoder(resp.Body).Decode(&srs); err != nil {
+		t.Errorf("Error: %s. Json decoding body: %s\n", err, resp.Body)
+	}
+	if srs[0].URL != "https://www.google.com" {
+		t.Errorf("Expected url https://www.google.com but got %v", srs[0].URL)
+	}
+	if srs[0].Schedule != "daily" {
+		t.Errorf("Expected schedule to be daily  but got %v", srs[0].Schedule)
+	}
+
+	req, _ = http.NewRequest("GET", "/scheduled-reports/"+sr.ID.Hex(), srJson)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+
+	req, _ = http.NewRequest("DELETE", "/scheduled-reports/"+sr.ID.Hex(), srJson)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+}
+
+func TestCreateScheduledReportInvalidSchedule(t *testing.T) {
+	body := []byte(`{
+		"url": "https://www.google.com",
+		"schedule": "invalidschedule"
+	}`)
+	sr := bytes.NewBuffer(body)
+	req, _ := http.NewRequest("POST", "/scheduled-reports", sr)
+	resp := executeRequest(req)
+	checkResponseCode(t, http.StatusBadRequest, resp)
+	if body := resp.Body.String(); strings.Contains(body, "schedule: must be a valid value") != true {
+		t.Errorf("Expected schedule: must be a valid value. Got %s", body)
+	}
+}
+
+func TestHTTPRunReport(t *testing.T) {
+	ts := httptest.NewServer(a.Router)
+	defer ts.Close()
+	api.ApiUrl = ts.URL
+	rr := api.ReportRequest{URL: "https://www.google.com"}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLightHouseClient := mocks.NewMockLighthouseServiceClient(ctrl)
+	api.LighthouseClient = mockLightHouseClient
+	mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
+		&lighthouse.LighthouseResult{Stdout: []byte("{}")}, nil,
+	)
+	api.HTTPRunReport(rr)
+}

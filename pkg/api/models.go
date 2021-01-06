@@ -66,6 +66,21 @@ func (r ReportRequest) Validate() error {
 	)
 }
 
+type ScheduledReport struct {
+	ID            primitive.ObjectID `json:"id" bson:"_id"`
+	ReportRequest `bson:",inline"`
+	Schedule      string    `json:"schedule" bson:"schedule" example:"daily"`
+	LastRun       time.Time `json:"last_run" bson:"last_run"`
+	CreatedAt     time.Time `json:"created_at" bson:"created_at"`
+}
+
+func (s ScheduledReport) Validate() error {
+	return validation.ValidateStruct(&s,
+		validation.Field(&s.ReportRequest),
+		validation.Field(&s.Schedule, validation.In("daily", "weekly")),
+	)
+}
+
 type Report struct {
 	ID            primitive.ObjectID `json:"id" bson:"_id"`
 	ReportRequest `bson:",inline"`
@@ -245,4 +260,106 @@ func GetLocationByObjectIDHex(hex string) (Location, error) {
 		return location, err
 	}
 	return location, nil
+}
+
+func NewScheduledReport() *ScheduledReport {
+	s := new(ScheduledReport)
+	s.ID = primitive.NewObjectID()
+	s.CreatedAt = time.Now()
+	return s
+}
+
+func (sr *ScheduledReport) Insert() error {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	collection := DB.Database(DatabaseName).Collection("scheduled_reports")
+	if _, err := collection.InsertOne(ctx, sr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sr *ScheduledReport) Update() error {
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	filter := bson.M{"_id": sr.ID}
+	collection := DB.Database(DatabaseName).Collection("scheduled_reports")
+	if _, err := collection.ReplaceOne(ctx, filter, sr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sr *ScheduledReport) Delete() error {
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+	result, err := DB.Database(DatabaseName).Collection("scheduled_reports").DeleteOne(context.TODO(), bson.M{"_id": sr.ID}, nil)
+	if err != nil {
+		return err
+	}
+	if result.DeletedCount == 1 {
+		return nil
+	} else if result.DeletedCount == 0 {
+		return errors.New("ScheduledReport with id " + sr.ID.Hex() + " did not exist")
+	} else {
+		return errors.New("Multiple ScheduledReports were deleted.")
+	}
+	return nil
+}
+
+func GetAllScheduledReports() ([]ScheduledReport, error) {
+	scheduledReports := []ScheduledReport{}
+	collection := DB.Database(DatabaseName).Collection("scheduled_reports")
+	c := context.TODO()
+	cursor, err := collection.Find(c, bson.D{})
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(c, &scheduledReports); err != nil {
+		return nil, err
+	}
+	return scheduledReports, nil
+}
+
+func GetScheduledReportByObjectIDHex(hex string) (ScheduledReport, error) {
+	var sr ScheduledReport
+	collection := DB.Database(DatabaseName).Collection("scheduled_reports")
+	oid, err := primitive.ObjectIDFromHex(hex)
+	if err != nil {
+		return sr, err
+	}
+	// db.sales.aggregate( [ { $project: { item: 1, dateDifference: { $subtract: [ "$$NOW", "$date" ] } } } ] )
+	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&sr)
+	if err != nil {
+		return sr, err
+	}
+	return sr, nil
+}
+
+func GetScheduleReportsDueToRun() ([]ScheduledReport, error) {
+	scheduledReports := []ScheduledReport{}
+	collection := DB.Database(DatabaseName).Collection("scheduled_reports")
+	c := context.TODO()
+	query := bson.M{
+		"$or": []bson.M{
+			bson.M{"schedule": "hourly",
+				"last_run": bson.M{
+					"$lte": time.Now().Add(-60 * time.Minute)}},
+			bson.M{"schedule": "daily",
+				"last_run": bson.M{
+					"$lte": time.Now().AddDate(0, 0, -1)}},
+			bson.M{"schedule": "weekly",
+				"last_run": bson.M{
+					"$lte": time.Now().AddDate(0, 0, -7)}},
+			bson.M{"schedule": "monthly",
+				"last_run": bson.M{
+					"$lte": time.Now().AddDate(0, -1, 0)}},
+		}}
+	cursor, err := collection.Find(c, query)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(c, &scheduledReports); err != nil {
+		return nil, err
+	}
+	return scheduledReports, nil
 }

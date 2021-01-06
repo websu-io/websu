@@ -24,6 +24,11 @@ var (
 	DefaultRateLimit  = "10-M"
 	LighthouseClient  pb.LighthouseServiceClient
 	LighthouseClients map[string]pb.LighthouseServiceClient
+	ApiUrl            string
+	GCPProject        = ""
+	GCPRegion         = ""
+	GCPTaskQueue      = ""
+	Scheduler         = ""
 )
 
 type App struct {
@@ -97,6 +102,11 @@ func (a *App) SetupRoutes() {
 	a.Router.Handle("/reports", limiter.Handler(http.HandlerFunc(a.createReport))).Methods("POST")
 	a.Router.HandleFunc("/reports/{id}", a.getReport).Methods("GET")
 	a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
+	a.Router.HandleFunc("/scheduled-reports", a.ScheduledReportsGet).Methods("GET")
+	a.Router.Handle("/scheduled-reports", limiter.Handler(http.HandlerFunc(a.ScheduledReportsPost))).Methods("POST")
+	a.Router.HandleFunc("/scheduled-reports/run", a.ScheduledReportDelete).Methods("GET")
+	a.Router.HandleFunc("/scheduled-reports/{id}", a.ScheduledReportGet).Methods("GET")
+	a.Router.HandleFunc("/scheduled-reports/{id}", a.ScheduledReportDelete).Methods("DELETE")
 	a.Router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
 	a.Router.HandleFunc("/locations", a.getLocations).Methods("GET")
 	a.Router.HandleFunc("/locations", a.createLocation).Methods("POST")
@@ -282,4 +292,80 @@ func (a *App) deleteLocation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(&Report{})
+}
+
+func (a *App) ScheduledReportsGet(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	sr, err := GetAllScheduledReports()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(&sr)
+}
+
+func (a *App) ScheduledReportsPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	sr := NewScheduledReport()
+	if err := decodeJSONBody(w, r, &sr); err != nil {
+		var mr *malformedRequest
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			log.WithError(err).Error("Error decoding ScheduledReport json")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	log.Infof("Decoded json from HTTP body. ScheduledReport: %+v", sr)
+	if err := sr.Validate(); err != nil {
+		log.WithError(err).WithField("ScheduledReport", sr).Info("Unable to validate ScheduledReport")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err := sr.Insert(); err != nil {
+		log.WithError(err).WithField("sr", sr).Error("Error creating ScheduledReport")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(&sr)
+}
+
+func (a *App) ScheduledReportGet(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	sr, err := GetScheduledReportByObjectIDHex(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(&sr)
+}
+
+func (a *App) ScheduledReportDelete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	sr, err := GetScheduledReportByObjectIDHex(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	log.WithFields(log.Fields{
+		"sr":     sr,
+		"params": params,
+	}).Info("Deleting ScheduledReport")
+	if err := sr.Delete(); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode(&ScheduledReport{})
+}
+
+func (a *App) RunScheduledReports(w http.ResponseWriter, r *http.Request) {
+	g := GCPScheduler{Project: GCPProject, Location: GCPRegion, Queue: GCPTaskQueue}
+	count := RunScheduledReports(g)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int{"count": count})
 }
