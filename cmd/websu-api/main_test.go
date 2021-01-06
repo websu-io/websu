@@ -177,11 +177,31 @@ func TestCreateGetandDeleteReport(t *testing.T) {
 	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
 		t.Errorf("Error: %s. Json decoding body: %s\n", err, r.Body)
 	}
-
+	if report.URL != "https://www.google.com" {
+		t.Errorf("Error: report.URL should be: https://www.google.com, but got %v", report.URL)
+	}
 	req, _ := http.NewRequest("GET", "/reports/"+report.ID.Hex(), nil)
 	log.Printf("Request: %+v", req)
 	r = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, r)
+	report = api.Report{}
+	if err := json.NewDecoder(r.Body).Decode(&report); err != nil {
+		t.Errorf("Error: %s. Json decoding body: %s\n", err, r.Body)
+	}
+	if report.URL != "https://www.google.com" {
+		t.Errorf("Error: report.URL should be: https://www.google.com, but got %v", report.URL)
+	}
+	req, _ = http.NewRequest("GET", "/reports", nil)
+	log.Printf("Request: %+v", req)
+	r = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, r)
+	var reports []api.Report
+	if err := json.NewDecoder(r.Body).Decode(&reports); err != nil {
+		t.Errorf("Error: %s. Json decoding body: %s\n", err, r.Body)
+	}
+	if reports[0].URL != "https://www.google.com" {
+		t.Errorf("Error: report.URL should be: https://www.google.com, but got %v", report.URL)
+	}
 
 	req, _ = http.NewRequest("DELETE", "/reports/"+report.ID.Hex(), nil)
 	log.Printf("Request: %+v", req)
