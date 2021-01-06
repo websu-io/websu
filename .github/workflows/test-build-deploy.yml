@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: Build and deploy to production
 
 on:
   push:
@@ -25,6 +25,12 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Login to GAR
+      uses: docker/login-action@v1
+      with:
+        registry: us-central1-docker.pkg.dev
+        username: _json_key
+        password: ${{ secrets.GAR_SA }}
     - name: Build and push websu-api
       uses: docker/build-push-action@v2
       with:
@@ -32,14 +38,15 @@ jobs:
         file: ./build/Dockerfile_websu-api
         platforms: linux/amd64
         push: true
-        tags: samos123/websu-api:latest
+        tags: |
+          samos123/websu-api:latest
+          us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/websu-api:latest
     - name: Build and push lighthouse-server
       uses: docker/build-push-action@v2
       with:
         context: .
         file: ./build/Dockerfile_lighthouse-server
         platforms: linux/amd64
-        no-cache: true
         push: true
         tags: samos123/lighthouse-server:latest
     - name: Build and push lighthouse-server-docker
@@ -50,3 +57,10 @@ jobs:
         platforms: linux/amd64
         push: true
         tags: samos123/lighthouse-server-docker:latest
+    - id: deploy
+      uses: google-github-actions/deploy-cloudrun@main
+      with:
+        image: us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/websu-api:latest
+        service: websu-api
+        region: us-central1
+        credentials: ${{ secrets.CLOUDRUN_SA }}
