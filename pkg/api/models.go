@@ -67,11 +67,8 @@ func (r ReportRequest) Validate() error {
 }
 
 type Report struct {
-	ID             primitive.ObjectID `json:"id" bson:"_id"`
-	URL            string             `json:"url" bson:"url" example:"https://www.google.com"`
-	FormFactor     string             `json:"form_factor" bson:"form_factor" example:"desktop"`
-	ThroughputKbps int64              `json:"throughput_kbps" bson:"thoughput_kbps" example:"50000"`
-	Location       string             `json:"location" bson:"location" example:"australia-southeast1"`
+	ID            primitive.ObjectID `json:"id" bson:"_id"`
+	ReportRequest `bson:",inline"`
 	// RawJSON contains the lighthouse JSON result
 	RawJSON          string                 `json:"raw_json" bson:"raw_json"`
 	CreatedAt        time.Time              `json:"created_at" bson:"created_at"`

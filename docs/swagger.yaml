@@ -28,11 +28,14 @@ definitions:
       created_at:
         type: string
       form_factor:
+        description: Optional parameter, possible values are desktop or mobile. If
+          unset will default to desktop
         example: desktop
         type: string
       id:
         type: string
       location:
+        description: Optional parameter, default location will be used if not set
         example: australia-southeast1
         type: string
       performance_score:
@@ -41,9 +44,11 @@ definitions:
         description: RawJSON contains the lighthouse JSON result
         type: string
       throughput_kbps:
+        description: Optional parameter, by default will be set to 1000 if omitted
         example: 50000
         type: integer
       url:
+        description: Required parameter the URL of the website
         example: https://www.google.com
         type: string
     type: object

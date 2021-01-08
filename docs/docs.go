@@ -106,6 +106,7 @@ var doc = `{
                     "type": "string"
                 },
                 "form_factor": {
+                    "description": "Optional parameter, possible values are desktop or mobile. If unset will default to desktop",
                     "type": "string",
                     "example": "desktop"
                 },
@@ -113,6 +114,7 @@ var doc = `{
                     "type": "string"
                 },
                 "location": {
+                    "description": "Optional parameter, default location will be used if not set",
                     "type": "string",
                     "example": "australia-southeast1"
                 },
@@ -124,10 +126,12 @@ var doc = `{
                     "type": "string"
                 },
                 "throughput_kbps": {
+                    "description": "Optional parameter, by default will be set to 1000 if omitted",
                     "type": "integer",
                     "example": 50000
                 },
                 "url": {
+                    "description": "Required parameter the URL of the website",
                     "type": "string",
                     "example": "https://www.google.com"
                 }
