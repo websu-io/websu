@@ -1,5 +1,4 @@
-[![websu.io](screenshot.png "Websu.io screenshot")](https://websu.io)
-# Websu - Web speed analysis
+# [![websu.io](logo.png "Websu logo")](https://websu.io) - Web speed optimization and monitoring
 
 [Websu](https://websu.io) helps you understand your web applications performance.
 [Lighthouse](https://github.com/GoogleChrome/lighthouse) is used to generate performance reports.
