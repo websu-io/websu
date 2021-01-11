@@ -118,7 +118,7 @@ func GetAllReports() ([]Report, error) {
 	reports := []Report{}
 	collection := DB.Database(DatabaseName).Collection("reports")
 	c := context.TODO()
-	cursor, err := collection.Find(c, bson.D{})
+	cursor, err := collection.Find(c, bson.D{}, options.Find().SetProjection(bson.M{"raw_json": 0}))
 	if err != nil {
 		return nil, err
 	}
