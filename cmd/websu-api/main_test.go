@@ -52,7 +52,7 @@ func cleanUpAfterTest() {
 		report.Delete()
 	}
 	a = api.NewApp()
-	api.CreateMongoClient("mongodb://localhost:27017")
+	api.CreateMongoClient("mongodb://localhost:27018")
 	api.DatabaseName = "websu-test"
 }
 
