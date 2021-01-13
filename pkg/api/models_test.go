@@ -4,27 +4,17 @@ import (
 	"context"
 	"log"
 	"os"
-	"os/exec"
 	"testing"
 	"time"
 )
 
 func TestMain(m *testing.M) {
-	cmd := exec.Command("docker-compose", "up", "-d", "mongo")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		log.Fatalf("Starting mongo docker container had an error. Out: %s, Err: %s", string(out), err)
-	}
-
-	CreateMongoClient("mongodb://localhost:27017")
+	CreateMongoClient("mongodb://localhost:27018")
 	DatabaseName = "websu-test"
 	code := m.Run()
 	ctx := context.TODO()
 	if err := DB.Database(DatabaseName).Drop(ctx); err != nil {
 		log.Fatalf("Error dropping test database %v: %v", DatabaseName, err)
-	}
-	cmd = exec.Command("docker-compose", "stop", "mongo")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		log.Fatalf("Stopping mongo docker container had an error. Out: %s, Err: %s", string(out), err)
 	}
 	os.Exit(code)
 }
