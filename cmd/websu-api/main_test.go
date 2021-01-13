@@ -33,6 +33,11 @@ func TestMain(m *testing.M) {
 	if err := api.DB.Database(api.DatabaseName).Drop(ctx); err != nil {
 		log.Fatalf("Error dropping test database %v: %v", api.DatabaseName, err)
 	}
+	cmd = exec.Command("docker-compose", "stop", "mongo")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Fatalf("Stopping mongo docker container had an error. Out: %s, Err: %s", string(out), err)
+	}
+
 	os.Exit(code)
 }
 
