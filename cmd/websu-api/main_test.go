@@ -21,8 +21,8 @@ var a *api.App
 
 func TestMain(m *testing.M) {
 	cmd := exec.Command("docker-compose", "up", "-d", "mongo")
-	if err := cmd.Run(); err != nil {
-		log.Fatalf("Starting mongo docker container had an error: %v", err)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Fatalf("Starting mongo docker container had an error. Out: %s, Err: %s", string(out), err)
 	}
 
 	a = api.NewApp()
