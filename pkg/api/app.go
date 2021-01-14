@@ -104,7 +104,7 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
 	a.Router.HandleFunc("/scheduled-reports", a.ScheduledReportsGet).Methods("GET")
 	a.Router.Handle("/scheduled-reports", limiter.Handler(http.HandlerFunc(a.ScheduledReportsPost))).Methods("POST")
-	a.Router.HandleFunc("/scheduled-reports/run", a.ScheduledReportDelete).Methods("GET")
+	a.Router.HandleFunc("/scheduled-reports/run", a.RunScheduledReports).Methods("GET")
 	a.Router.HandleFunc("/scheduled-reports/{id}", a.ScheduledReportGet).Methods("GET")
 	a.Router.HandleFunc("/scheduled-reports/{id}", a.ScheduledReportDelete).Methods("DELETE")
 	a.Router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
