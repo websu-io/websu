@@ -77,7 +77,7 @@ type ScheduledReport struct {
 func (s ScheduledReport) Validate() error {
 	return validation.ValidateStruct(&s,
 		validation.Field(&s.ReportRequest),
-		validation.Field(&s.Schedule, validation.In("daily", "weekly")),
+		validation.Field(&s.Schedule, validation.In("hourly", "daily", "weekly", "monthly")),
 	)
 }
 
