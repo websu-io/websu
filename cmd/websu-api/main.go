@@ -20,6 +20,7 @@ var (
 	gcpProject             = ""
 	gcpRegion              = ""
 	gcpTaskQueue           = ""
+	serveFrontend          = true
 )
 
 // @title Websu API
@@ -63,6 +64,9 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 	flag.StringVar(&gcpTaskQueue, "gcp-taskqueue",
 		cmd.GetenvString("GCP_TASKQUEUE", gcpTaskQueue),
 		"The GCP cloud task queue ID. This setting is optional by default and only required if scheduler is set to GCP.")
+	flag.BoolVar(&serveFrontend, "serve-frontend",
+		cmd.GetenvBool("SERVE_FRONTEND", serveFrontend),
+		"Boolean flag to indicate whether the API server should also serve the Web UI frontend. Default: true")
 	flag.Parse()
 
 	docs.SwaggerInfo.Host = apiHost
@@ -70,8 +74,9 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 	if redisURL != "" {
 		options = append(options, api.WithRedis(redisURL))
 	}
-	a := api.NewApp(options...)
 	api.ApiUrl = apiUrl
+	api.ServeFrontend = serveFrontend
+	a := api.NewApp(options...)
 	api.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
 	api.CreateMongoClient(mongoURI)
 	api.ConnectLHLocations()

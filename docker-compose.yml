@@ -7,6 +7,7 @@ services:
     environment:
     - "LIGHTHOUSE_SERVER=lighthouse-server:50051"
     - "MONGO_URI=mongodb://mongo:27017"
+    - "SERVE_FRONTEND=false"
     links:
     - mongo
     - lighthouse-server

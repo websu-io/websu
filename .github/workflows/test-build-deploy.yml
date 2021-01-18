@@ -40,7 +40,15 @@ jobs:
         push: true
         tags: |
           samos123/websu-api:latest
-          us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/websu-api:latest
+    - name: Build and push websu-api-no-frontend
+      uses: docker/build-push-action@v2
+      with:
+        context: .
+        file: ./build/Dockerfile_websu-api-no-frontend
+        platforms: linux/amd64
+        push: true
+        tags: |
+          us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/websu-api-no-frontend:latest
     - name: Build and push lighthouse-server
       uses: docker/build-push-action@v2
       with:
@@ -60,7 +68,7 @@ jobs:
     - id: deploy
       uses: google-github-actions/deploy-cloudrun@main
       with:
-        image: us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/websu-api:latest
+        image: us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/websu-api-no-frontend:latest
         service: websu-api
         region: us-central1
         credentials: ${{ secrets.CLOUDRUN_SA }}

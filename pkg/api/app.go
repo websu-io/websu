@@ -29,6 +29,7 @@ var (
 	GCPRegion         = ""
 	GCPTaskQueue      = ""
 	Scheduler         = ""
+	ServeFrontend     bool
 )
 
 type App struct {
@@ -111,8 +112,10 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/locations", a.getLocations).Methods("GET")
 	a.Router.HandleFunc("/locations", a.createLocation).Methods("POST")
 	a.Router.HandleFunc("/locations/{id}", a.deleteLocation).Methods("DELETE")
-	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
-	a.Router.PathPrefix("/").Handler(spa)
+	if ServeFrontend {
+		spa := spaHandler{staticPath: "static", indexPath: "index.html"}
+		a.Router.PathPrefix("/").Handler(spa)
+	}
 }
 
 func (a *App) Run(address string) {
