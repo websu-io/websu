@@ -129,12 +129,16 @@ func CreateMongoIndexes() {
 	log.WithField("name", name).Info("Created index")
 }
 
-func GetAllReports() ([]Report, error) {
+func GetAllReports(limit int64, skip int64) ([]Report, error) {
 	reports := []Report{}
 	collection := DB.Database(DatabaseName).Collection("reports")
 	c := context.TODO()
-	cursor, err := collection.Find(c, bson.D{},
-		options.Find().SetProjection(bson.M{"raw_json": 0}).SetSort(bson.M{"created_at": -1}))
+	options := options.Find()
+	options.SetProjection(bson.M{"raw_json": 0, "audit_results": 0})
+	options.SetSort(bson.M{"created_at": -1})
+	options.SetLimit(limit)
+	options.SetSkip(skip)
+	cursor, err := collection.Find(c, bson.D{}, options)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +146,6 @@ func GetAllReports() ([]Report, error) {
 		return nil, err
 	}
 	return reports, nil
-
 }
 
 func NewReport() *Report {

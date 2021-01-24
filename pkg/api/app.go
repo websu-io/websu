@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"time"
 )
 
@@ -129,7 +130,31 @@ func (a *App) Run(address string) {
 
 func (a *App) getReports(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	reports, err := GetAllReports()
+	q := r.URL.Query()
+	var limit, skip int64
+	var err error
+	limitStr := q.Get("limit")
+	skipStr := q.Get("skip")
+	if limitStr != "" {
+		limit, err = strconv.ParseInt(limitStr, 10, 64)
+		if err != nil {
+			log.WithError(err).Error("Error parsing limit")
+			http.Error(w, "Error parsing limit param: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	if skipStr != "" {
+		skip, err = strconv.ParseInt(skipStr, 10, 64)
+		if err != nil {
+			log.WithError(err).Error("Error parsing skip")
+			http.Error(w, "Error parsing skip param: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	if limit == 0 {
+		limit = 50
+	}
+	reports, err := GetAllReports(limit, skip)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

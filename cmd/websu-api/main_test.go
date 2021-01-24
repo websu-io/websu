@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/websu-io/websu/pkg/api"
 	"github.com/websu-io/websu/pkg/lighthouse"
@@ -14,6 +15,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 var a *api.App
@@ -42,9 +44,9 @@ func checkResponseCode(t *testing.T, expected int, response *httptest.ResponseRe
 	}
 }
 
-func cleanUpAfterTest() {
+func deleteAllReports() {
 
-	reports, err := api.GetAllReports()
+	reports, err := api.GetAllReports(500, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,16 +56,6 @@ func cleanUpAfterTest() {
 	a = api.NewApp()
 	api.CreateMongoClient("mongodb://localhost:27018")
 	api.DatabaseName = "websu-test"
-}
-
-func TestGetReportsEmpty(t *testing.T) {
-	cleanUpAfterTest()
-	req, _ := http.NewRequest("GET", "/reports", nil)
-	response := executeRequest(req)
-	checkResponseCode(t, http.StatusOK, response)
-	if body := response.Body.String(); strings.TrimSpace(body) != "[]" {
-		t.Errorf("Expected an empty array as []. Got %s", body)
-	}
 }
 
 func createReport(t *testing.T, body []byte, mockLighthouseServer bool) *httptest.ResponseRecorder {
@@ -82,6 +74,70 @@ func createReport(t *testing.T, body []byte, mockLighthouseServer bool) *httptes
 	return resp
 }
 
+func TestGetReportsEmpty(t *testing.T) {
+	deleteAllReports()
+	req, _ := http.NewRequest("GET", "/reports", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response)
+	if body := response.Body.String(); strings.TrimSpace(body) != "[]" {
+		t.Errorf("Expected an empty array as []. Got %s", body)
+	}
+}
+
+func TestGetReportsLimitSkip(t *testing.T) {
+	deleteAllReports()
+	for i := 1; i <= 50; i++ {
+		r := api.NewReport()
+		r.URL = fmt.Sprintf("http://test-%v", i)
+		r.CreatedAt = time.Now().AddDate(0, 0, i)
+		if err := r.Insert(); err != nil {
+			t.Error("Error inserting report: " + err.Error())
+		}
+	}
+	req, _ := http.NewRequest("GET", "/reports", nil)
+	resp := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	var reports []api.Report
+	if err := json.NewDecoder(resp.Body).Decode(&reports); err != nil {
+		t.Errorf("Error: %s. Json decoding body: %s\n", err, resp.Body)
+	}
+	if len(reports) != 50 {
+		t.Errorf("Expected len(reports) = 50, but got len(reports) = %v", len(reports))
+	}
+
+	req, _ = http.NewRequest("GET", "/reports?limit=10", nil)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	var partialReports []api.Report
+	if err := json.NewDecoder(resp.Body).Decode(&partialReports); err != nil {
+		t.Errorf("Error: %s. Json decoding body: %s\n", err, resp.Body)
+	}
+	if len(partialReports) != 10 {
+		t.Errorf("Expected len(reports) = 10, but got len(reports) = %v", len(partialReports))
+	}
+	for i, report := range partialReports {
+		if report.URL != reports[i].URL {
+			t.Errorf("Expected reports to be the same. Expected %v, but got %v", report.URL, reports[i].URL)
+		}
+	}
+
+	req, _ = http.NewRequest("GET", "/reports?limit=10&skip=10", nil)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	partialReports = nil
+	if err := json.NewDecoder(resp.Body).Decode(&partialReports); err != nil {
+		t.Errorf("Error: %s. Json decoding body: %s\n", err, resp.Body)
+	}
+	if len(partialReports) != 10 {
+		t.Errorf("Expected len(reports) = 10, but got len(reports) = %v", len(partialReports))
+	}
+	for i, report := range partialReports {
+		if report.URL != reports[i+10].URL {
+			t.Errorf("Expected reports to be the same. Expected %v, but got %v", report.URL, reports[i+10].URL)
+		}
+	}
+}
+
 func TestCreateReport(t *testing.T) {
 	body := []byte(`{"URL": "https://www.google.com"}`)
 	response := createReport(t, body, true)
@@ -89,7 +145,7 @@ func TestCreateReport(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "google.com") != true {
 		t.Errorf("Expected body to contain google.com. Got %s", body)
 	}
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestCreateReportRateLimit(t *testing.T) {
@@ -107,7 +163,7 @@ func TestCreateReportRateLimit(t *testing.T) {
 		response := createReport(t, body, mock)
 		checkResponseCode(t, responseCode, response)
 	}
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestCreateReportFFDesktop(t *testing.T) {
@@ -120,7 +176,7 @@ func TestCreateReportFFDesktop(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "\"form_factor\":\"desktop\"") != true {
 		t.Errorf("Expected body to form_factor: 'desktop'. Got %s", body)
 	}
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestCreateReportFFMobile(t *testing.T) {
@@ -133,7 +189,7 @@ func TestCreateReportFFMobile(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, "\"form_factor\":\"mobile\"") != true {
 		t.Errorf("Expected body to form_factor: 'mobile'. Got %s", body)
 	}
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestCreateReportFFMInvalid(t *testing.T) {
@@ -144,21 +200,21 @@ func TestCreateReportFFMInvalid(t *testing.T) {
 	if body := response.Body.String(); strings.Contains(body, expected) != true {
 		t.Errorf("Expected body to contain %s. Got %s", expected, body)
 	}
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestCreateReportThroughputKbpsValid(t *testing.T) {
 	body := []byte(`{"url": "https://www.google.com", "throughput_kbps": 50000}`)
 	response := createReport(t, body, true)
 	checkResponseCode(t, http.StatusOK, response)
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestCreateReportThroughputKbpsInvalid(t *testing.T) {
 	body := []byte(`{"url": "https://www.google.com", "throughput_kbps": "not a number"}`)
 	response := createReport(t, body, false)
 	checkResponseCode(t, http.StatusBadRequest, response)
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestCreateGetandDeleteReport(t *testing.T) {
@@ -202,7 +258,7 @@ func TestCreateGetandDeleteReport(t *testing.T) {
 	r = executeRequest(req)
 	checkResponseCode(t, http.StatusOK, r)
 
-	cleanUpAfterTest()
+	deleteAllReports()
 }
 
 func TestDeleteReportNonExisting(t *testing.T) {
