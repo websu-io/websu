@@ -13,7 +13,10 @@ jobs:
     - name: go test ./...
       run: |
           sudo npm install -g lighthouse
-          ./run-tests.sh
+          ./run-tests.sh unit
+    - name: integration tests
+      run: |
+          ./run-tests.sh integration
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
     - name: Set up Docker Buildx
@@ -72,3 +75,4 @@ jobs:
         service: websu-api
         region: us-central1
         credentials: ${{ secrets.CLOUDRUN_SA }}
+
