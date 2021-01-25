@@ -150,7 +150,8 @@ func GetAllReports(limit int64, skip int64) ([]Report, error) {
 
 func GetAllReportsCount() (int64, error) {
 	collection := DB.Database(DatabaseName).Collection("reports")
-	count, err := collection.CountDocuments(context.Background(), bson.D{})
+	opts := options.EstimatedDocumentCount().SetMaxTime(2 * time.Second)
+	count, err := collection.EstimatedDocumentCount(context.Background(), opts)
 	if err != nil {
 		return 0, err
 	}
