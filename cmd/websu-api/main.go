@@ -21,6 +21,7 @@ var (
 	gcpRegion              = ""
 	gcpTaskQueue           = ""
 	serveFrontend          = true
+	auth                   = ""
 )
 
 // @title Websu API
@@ -64,6 +65,9 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 	flag.StringVar(&gcpTaskQueue, "gcp-taskqueue",
 		cmd.GetenvString("GCP_TASKQUEUE", gcpTaskQueue),
 		"The GCP cloud task queue ID. This setting is optional by default and only required if scheduler is set to GCP.")
+	flag.StringVar(&auth, "auth",
+		cmd.GetenvString("AUTH", auth),
+		"The authentication method to be used. This setting is optional and by default no authentication is done. Possible values: '' or 'firebase'.")
 	flag.Parse()
 
 	docs.SwaggerInfo.Host = apiHost
@@ -72,6 +76,13 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 		options = append(options, api.WithRedis(redisURL))
 	}
 	api.ApiUrl = apiUrl
+	api.Auth = auth
+	if auth != "" && auth != "firebase" {
+		log.Fatalf("--auth is currently set to %s, which isn't a valid value. Please use '' or 'firebase'", auth)
+	}
+	if auth == "firebase" {
+		api.InitFirebase()
+	}
 	a := api.NewApp(options...)
 	api.LighthouseClient = api.ConnectToLighthouseServer(lighthouseServer, lighthouseServerSecure)
 	api.CreateMongoClient(mongoURI)
@@ -89,5 +100,6 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 		api.GCPRegion = gcpRegion
 		api.GCPTaskQueue = gcpTaskQueue
 	}
+
 	a.Run(listenAddress)
 }

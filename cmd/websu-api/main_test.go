@@ -46,7 +46,7 @@ func checkResponseCode(t *testing.T, expected int, response *httptest.ResponseRe
 
 func deleteAllReports() {
 
-	reports, err := api.GetAllReports(500, 0)
+	reports, err := api.GetReports(500, 0, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

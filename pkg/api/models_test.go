@@ -19,6 +19,41 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+func TestGetReports(t *testing.T) {
+	r := NewReport()
+	r.URL = "https://www.sam.com"
+	r.User = "sam"
+	r.Insert()
+
+	r = NewReport()
+	r.URL = "https://www.google.com"
+	r.Insert()
+
+	r = NewReport()
+	r.URL = "https://www.google.com"
+	r.User = "rob"
+	r.Insert()
+	query := map[string]interface{}{"user": "sam"}
+	reports, err := GetReports(10, 0, query)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if len(reports) != 1 {
+		t.Errorf("len(reports) should be 1, but got %v", len(reports))
+	}
+	if reports[0].User != "sam" {
+		t.Errorf("Expected report.User to be set to sam, but got %v", reports[0].User)
+	}
+
+	reports, err = GetReports(10, 0, nil)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if len(reports) != 3 {
+		t.Errorf("len(reports) should be 3, but got %v", len(reports))
+	}
+}
+
 func TestScheduledReports(t *testing.T) {
 	r := NewScheduledReport()
 	r.URL = "https://www.google.com"

@@ -83,6 +83,7 @@ func (s ScheduledReport) Validate() error {
 
 type Report struct {
 	ID            primitive.ObjectID `json:"id" bson:"_id"`
+	User          string             `json:"user"`
 	ReportRequest `bson:",inline"`
 	// RawJSON contains the lighthouse JSON result
 	RawJSON          string                 `json:"raw_json" bson:"raw_json"`
@@ -140,7 +141,7 @@ func CreateMongoIndexes() {
 	log.WithField("name", reportsIndexName).Info("Created index for reports")
 }
 
-func GetAllReports(limit int64, skip int64) ([]Report, error) {
+func GetReports(limit int64, skip int64, query map[string]interface{}) ([]Report, error) {
 	reports := []Report{}
 	collection := DB.Database(DatabaseName).Collection("reports")
 	c := context.TODO()
@@ -150,7 +151,13 @@ func GetAllReports(limit int64, skip int64) ([]Report, error) {
 	options.SetLimit(limit)
 	options.SetSkip(skip)
 	options.SetAllowDiskUse(true)
-	cursor, err := collection.Find(c, bson.D{}, options)
+	var cursor *mongo.Cursor
+	var err error
+	if len(query) > 0 {
+		cursor, err = collection.Find(c, query, options)
+	} else {
+		cursor, err = collection.Find(c, bson.D{}, options)
+	}
 	if err != nil {
 		return nil, err
 	}
