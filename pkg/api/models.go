@@ -114,19 +114,30 @@ type Location struct {
 }
 
 func CreateMongoIndexes() {
-	mod := mongo.IndexModel{
+	locationsIndexOpts := mongo.IndexModel{
 		Keys:    bson.M{"name": 1},
 		Options: options.Index().SetUnique(true),
 	}
-	collection := DB.Database(DatabaseName).Collection("locations")
+	locations := DB.Database(DatabaseName).Collection("locations")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	name, err := collection.Indexes().CreateOne(ctx, mod)
+	locIndexName, err := locations.Indexes().CreateOne(ctx, locationsIndexOpts)
 	if err != nil {
-		log.WithError(err).Error("Error creating mongoDB indexes")
+		log.WithError(err).Error("Error creating mongoDB locations indexe")
 	}
-	log.WithField("name", name).Info("Created index")
+	log.WithField("name", locIndexName).Info("Created index for locations")
+
+	reportsIndex := mongo.IndexModel{
+		Keys:    bson.M{"created_at": -1},
+		Options: nil,
+	}
+	reports := DB.Database(DatabaseName).Collection("reports")
+	reportsIndexName, err := reports.Indexes().CreateOne(ctx, reportsIndex)
+	if err != nil {
+		log.WithError(err).Error("Error creating mongoDB reports index")
+	}
+	log.WithField("name", reportsIndexName).Info("Created index for reports")
 }
 
 func GetAllReports(limit int64, skip int64) ([]Report, error) {
