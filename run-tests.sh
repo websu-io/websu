@@ -9,9 +9,8 @@ testURL() {
 if [ "$1" = "unit" ]; then
   echo "Creating docker container on port 27018"
   docker run --name test-mongo -d -p 27018:27017 mongo
-  trap "docker stop test-mongo && docker rm test-mongo" EXIT
+  trap "docker stop test-mongo && docker rm test-mongo" EXIT SIGINT
   go test ./...
-
 elif [ "$1" = "integration" ]; then
   ./test-docker.sh
   echo "Sleeping 10 seconds to make sure all services are up"
