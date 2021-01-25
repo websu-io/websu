@@ -149,6 +149,7 @@ func GetAllReports(limit int64, skip int64) ([]Report, error) {
 	options.SetSort(bson.M{"created_at": -1})
 	options.SetLimit(limit)
 	options.SetSkip(skip)
+	options.SetAllowDiskUse(true)
 	cursor, err := collection.Find(c, bson.D{}, options)
 	if err != nil {
 		return nil, err
@@ -352,7 +353,6 @@ func GetScheduledReportByObjectIDHex(hex string) (ScheduledReport, error) {
 	if err != nil {
 		return sr, err
 	}
-	// db.sales.aggregate( [ { $project: { item: 1, dateDifference: { $subtract: [ "$$NOW", "$date" ] } } } ] )
 	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&sr)
 	if err != nil {
 		return sr, err
