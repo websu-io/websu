@@ -148,6 +148,15 @@ func GetAllReports(limit int64, skip int64) ([]Report, error) {
 	return reports, nil
 }
 
+func GetAllReportsCount() (int64, error) {
+	collection := DB.Database(DatabaseName).Collection("reports")
+	count, err := collection.CountDocuments(context.Background(), bson.D{})
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 func NewReport() *Report {
 	r := new(Report)
 	r.ID = primitive.NewObjectID()

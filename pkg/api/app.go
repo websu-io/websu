@@ -100,6 +100,7 @@ func (a *App) SetupRoutes() {
 	}
 	a.Router = mux.NewRouter()
 	a.Router.HandleFunc("/reports", a.getReports).Methods("GET")
+	a.Router.HandleFunc("/reports/count", a.getReportsCount).Methods("GET")
 	a.Router.Handle("/reports", limiter.Handler(http.HandlerFunc(a.createReport))).Methods("POST")
 	a.Router.HandleFunc("/reports/{id}", a.getReport).Methods("GET")
 	a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
@@ -160,6 +161,17 @@ func (a *App) getReports(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(&reports)
+}
+
+func (a *App) getReportsCount(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	count, err := GetAllReportsCount()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	resp := map[string]int64{"count": count}
+	json.NewEncoder(w).Encode(resp)
 }
 
 // @Summary Create a Lighthouse Report
