@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	libredis "github.com/go-redis/redis/v8"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
@@ -16,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"net/http"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"time"
@@ -30,6 +32,7 @@ var (
 	GCPRegion         = ""
 	GCPTaskQueue      = ""
 	Scheduler         = ""
+	Auth              = ""
 )
 
 type App struct {
@@ -117,11 +120,25 @@ func (a *App) SetupRoutes() {
 	a.Router.PathPrefix("/").Handler(spa)
 }
 
+func StdoutLoggingHandler(h http.Handler) http.Handler {
+	return handlers.LoggingHandler(os.Stdout, h)
+}
+
 func (a *App) Run(address string) {
-	handler := cors.Default().Handler(a.Router)
+	a.Router.Use(StdoutLoggingHandler)
+	if Auth == "firebase" {
+		log.Info("Using firebase as authentication backend")
+		a.Router.Use(JwtMiddleware)
+	}
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedHeaders: []string{"Authorization", "Content-Type"},
+	})
+	a.Router.Use(c.Handler)
+	a.Router.Use(handlers.CompressHandler)
 	s := &http.Server{
 		Addr:         address,
-		Handler:      handler,
+		Handler:      a.Router,
 		ReadTimeout:  300 * time.Second,
 		WriteTimeout: 300 * time.Second,
 	}
@@ -155,7 +172,14 @@ func (a *App) getReports(w http.ResponseWriter, r *http.Request) {
 	if limit == 0 {
 		limit = 50
 	}
-	reports, err := GetAllReports(limit, skip)
+	var reports []Report
+	if user := r.Context().Value("UserID"); user != nil {
+		log.WithField("user", user.(string)).Info("Getting reports for user")
+		query := map[string]interface{}{"user": user.(string)}
+		reports, err = GetReports(limit, skip, query)
+	} else {
+		reports, err = GetReports(limit, skip, nil)
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -239,6 +263,10 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	report := NewReportFromRequest(&reportRequest)
+	if user := r.Context().Value("UserID"); user != nil {
+		log.WithField("user", user.(string)).Info("Creating report with user")
+		report.User = user.(string)
+	}
 	report.AuditResults, err = parseAuditResults(lhResult.GetStdout(), keys)
 	if err != nil {
 		log.WithError(err).Error("Error parsing audit results")
