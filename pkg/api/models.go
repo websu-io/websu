@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	neturl "net/url"
 	"reflect"
 	"time"
 )
@@ -45,6 +46,18 @@ type ReportRequest struct {
 	Location string `json:"location" bson:"location" example:"australia-southeast1"`
 }
 
+func validateURL(value interface{}) error {
+	s, _ := value.(string)
+	u, err := neturl.Parse(s)
+	if err != nil {
+		return err
+	}
+	if u.Host == "flashnews.com" {
+		return errors.New("Sorry, your website is banned. Please file a GitHub issue if you believe this is unjustified.")
+	}
+	return nil
+}
+
 func checkLocation(value interface{}) error {
 	s, _ := value.(string)
 	if s == "" {
@@ -59,7 +72,7 @@ func checkLocation(value interface{}) error {
 
 func (r ReportRequest) Validate() error {
 	return validation.ValidateStruct(&r,
-		validation.Field(&r.URL, validation.Required, is.URL),
+		validation.Field(&r.URL, validation.Required, is.URL, validation.By(validateURL)),
 		validation.Field(&r.FormFactor, validation.In("desktop", "mobile")),
 		validation.Field(&r.ThroughputKbps, validation.Min(1000), validation.Max(500000)),
 		validation.Field(&r.Location, validation.By(checkLocation)),
