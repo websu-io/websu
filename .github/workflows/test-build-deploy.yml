@@ -12,7 +12,7 @@ jobs:
     - uses: actions/setup-go@v2
     - name: go test ./...
       run: |
-          sudo npm install -g lighthouse
+          sudo npm install -g lighthouse@6.5.0
           ./run-tests.sh unit
     - name: integration tests
       run: |
