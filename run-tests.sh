@@ -15,7 +15,7 @@ elif [ "$1" = "integration" ]; then
   ./test-docker.sh
   echo "Sleeping 10 seconds to make sure all services are up"
   sleep 10
-  trap "docker-compose logs" ERR
+  trap "docker-compose logs websu-api lighthouse-server" ERR
   testURL http://localhost:8000/
   testURL http://localhost:8000/reports
   testURL -d '{"url": "https://www.google.com"}' localhost:8000/reports

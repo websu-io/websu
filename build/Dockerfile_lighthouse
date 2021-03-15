@@ -1,15 +1,5 @@
-FROM golang:1.14 AS builder
-
-WORKDIR /go/src/github.com/websu-io/websu
-COPY go.mod go.sum ./
-# Download dependencies and cache in docker layer
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 go build ./cmd/lighthouse-server && mv lighthouse-server /
-
 FROM debian:buster-slim
 
-ENV USE_DOCKER=false
 
 # Install deps + add Chrome Stable + purge all the things
 RUN apt-get update && apt-get install -y \
@@ -38,9 +28,12 @@ RUN apt-get update && apt-get install -y \
 
 RUN npm install -g lighthouse@6.5.0
 
-WORKDIR /websu
+# Add Chrome as a user
+RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
+  && mkdir -p /home/chrome/reports && chown -R chrome:chrome /home/chrome
 
-COPY --from=builder /lighthouse-server /websu/lighthouse-server
+# Run Chrome non-privileged
+USER chrome
 
-ENTRYPOINT ["/websu/lighthouse-server"]
-EXPOSE 50051/tcp
+
+CMD ["/bin/bash"]
