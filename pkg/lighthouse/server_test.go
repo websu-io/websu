@@ -30,7 +30,7 @@ func TestRunLighthouse(t *testing.T) {
 			t.Parallel()
 			options := []string{}
 			chromeflags := []string{}
-			jsonResult, err := runLighthouse("https://www.google.com", useDocker, options, chromeflags)
+			jsonResult, err := runLighthouse("https://www.samos-it.com", useDocker, options, chromeflags)
 			if err != nil {
 				t.Errorf("Error running lighthouse: %v\n", err)
 			}
