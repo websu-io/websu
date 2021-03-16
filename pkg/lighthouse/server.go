@@ -27,7 +27,7 @@ func (s *Server) Run(ctx context.Context, in *LighthouseRequest) (*LighthouseRes
 func runLighthouse(url string, useDocker bool, options []string, chromeflags []string) (json []byte, err error) {
 	lhCommand := []string{}
 	if useDocker {
-		lhCommand = append(lhCommand, "docker", "run", "justinribeiro/lighthouse")
+		lhCommand = append(lhCommand, "docker", "run", "samos123/lighthouse:7.2.0")
 	}
 	defaultChromeflags := []string{"--no-sandbox", "--headless"}
 	chromeflags = append(defaultChromeflags, chromeflags...)

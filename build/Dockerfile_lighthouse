@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y \
       apt-transport-https \
       ca-certificates \
       curl \
-      wget \
       gnupg \
       --no-install-recommends \
   && curl -sSL https://deb.nodesource.com/setup_12.x | bash - \
@@ -32,9 +31,11 @@ RUN npm install -g lighthouse@$LH_VERSION
 
 # Add Chrome as a user
 RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
-  && mkdir /home/chrome && chown -R chrome:chrome /home/chrome
+  && mkdir -p /home/chrome/reports && chown -R chrome:chrome /home/chrome
 
-WORKDIR /home/chrome
+# some place we can mount and view lighthouse reports
+VOLUME /home/chrome/reports
+WORKDIR /home/chrome/reports
 
 # Run Chrome non-privileged
 USER chrome
