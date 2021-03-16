@@ -36,7 +36,9 @@ RUN apt-get update && apt-get install -y \
   && apt-get purge --auto-remove -y curl gnupg \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g lighthouse@6.5.0
+
+ARG LH_VERSION="7.2.0"
+RUN npm install -g lighthouse@$LH_VERSION
 
 WORKDIR /websu
 

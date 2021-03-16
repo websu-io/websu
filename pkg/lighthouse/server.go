@@ -33,7 +33,7 @@ func runLighthouse(url string, useDocker bool, options []string, chromeflags []s
 	chromeflags = append(defaultChromeflags, chromeflags...)
 	lhCommand = append(lhCommand, "lighthouse", url,
 		fmt.Sprintf("--chrome-flags=\"%s\"", strings.Join(chromeflags, " ")),
-		"--output=json", "--output-path=stdout")
+		"--output=json", "--output-path=stdout", "--disable-dev-shm-usage")
 	lhCommand = append(lhCommand, options...)
 
 	cmd := exec.Command(lhCommand[0], lhCommand[1:]...)

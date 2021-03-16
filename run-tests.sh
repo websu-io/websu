@@ -13,8 +13,8 @@ if [ "$1" = "unit" ]; then
   go test ./...
 elif [ "$1" = "integration" ]; then
   ./test-docker.sh
-  echo "Sleeping 10 seconds to make sure all services are up"
-  sleep 10
+  echo "Sleeping 20 seconds to make sure all services are up"
+  sleep 20
   trap "docker-compose logs websu-api lighthouse-server" ERR
   testURL http://localhost:8000/
   testURL http://localhost:8000/reports

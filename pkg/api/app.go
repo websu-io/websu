@@ -233,7 +233,7 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		reportRequest.ThroughputKbps = 1000
 	}
 	lhOptions := []string{
-		fmt.Sprintf("--emulated-form-factor=%v", reportRequest.FormFactor),
+		fmt.Sprintf("--form-factor=%v", reportRequest.FormFactor),
 		fmt.Sprintf("--throttling.throughputKbps=%v", reportRequest.ThroughputKbps),
 		"--throttling.rttMs=0",
 		"--throttling.cpuSlowdownMultiplier=1",
@@ -241,6 +241,23 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		"--throttling.downloadThroughputKbps=0",
 		"--throttling.uploadThroughputKbps=0",
 	}
+	if reportRequest.FormFactor == "mobile" {
+		lhOptions = append(lhOptions,
+			"--screenEmulation.mobile",
+			"--screenEmulation.width=360",
+			"--screenEmulation.height=640",
+			"--screenEmulation.deviceScaleFactor=2",
+		)
+	}
+	if reportRequest.FormFactor == "desktop" {
+		lhOptions = append(lhOptions,
+			"--screenEmulation.width=1350",
+			"--screenEmulation.height=940",
+			"--screenEmulation.deviceScaleFactor=1",
+			"--no-screenEmulation.mobile",
+		)
+	}
+
 	lhRequest := pb.LighthouseRequest{
 		Url:     reportRequest.URL,
 		Options: lhOptions,
