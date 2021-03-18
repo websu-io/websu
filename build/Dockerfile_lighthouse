@@ -1,44 +1,10 @@
-FROM debian:buster-slim
+FROM alpine:3.13
 
-ARG LH_VERSION="7.2.0"
+WORKDIR /opt/lighthouse
 
-# Install deps + add Chrome Stable + purge all the things
-RUN apt-get update && apt-get install -y \
-      apt-transport-https \
-      ca-certificates \
-      curl \
-      gnupg \
-      --no-install-recommends \
-  && curl -sSL https://deb.nodesource.com/setup_12.x | bash - \
-  && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-  && echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-  && apt-get update && apt-get install -y \
-      google-chrome-stable \
-      fontconfig \
-      fonts-ipafont-gothic \
-      fonts-wqy-zenhei \
-      fonts-thai-tlwg \
-      fonts-kacst \
-      fonts-symbola \
-      fonts-noto \
-      fonts-freefont-ttf \
-      nodejs \
-      --no-install-recommends \
-  && apt-get purge --auto-remove -y curl gnupg \
-  && rm -rf /var/lib/apt/lists/*
+ARG LH_VERSION="6.4.1"
+RUN apk --update-cache --no-cache \
+     add npm chromium \
+    && npm -g install lighthouse@$LH_VERSION
 
-RUN npm install -g lighthouse@$LH_VERSION
-
-# Add Chrome as a user
-RUN groupadd -r chrome && useradd -r -g chrome -G audio,video chrome \
-  && mkdir -p /home/chrome/reports && chown -R chrome:chrome /home/chrome
-
-# some place we can mount and view lighthouse reports
-VOLUME /home/chrome/reports
-WORKDIR /home/chrome/reports
-
-# Run Chrome non-privileged
-USER chrome
-
-
-CMD ["/bin/bash"]
+VOLUME /var/lighthouse

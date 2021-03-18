@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y \
   && rm -rf /var/lib/apt/lists/*
 
 
-ARG LH_VERSION="7.2.0"
+ARG LH_VERSION="6.4.1"
 RUN npm install -g lighthouse@$LH_VERSION
 
 WORKDIR /websu

@@ -27,13 +27,14 @@ func (s *Server) Run(ctx context.Context, in *LighthouseRequest) (*LighthouseRes
 func runLighthouse(url string, useDocker bool, options []string, chromeflags []string) (json []byte, err error) {
 	lhCommand := []string{}
 	if useDocker {
-		lhCommand = append(lhCommand, "docker", "run", "samos123/lighthouse:7.2.0")
+		lhCommand = append(lhCommand, "docker", "run", "samos123/lighthouse:6.4.1")
 	}
 	defaultChromeflags := []string{"--no-sandbox", "--headless"}
 	chromeflags = append(defaultChromeflags, chromeflags...)
 	lhCommand = append(lhCommand, "lighthouse", url,
 		fmt.Sprintf("--chrome-flags=\"%s\"", strings.Join(chromeflags, " ")),
-		"--output=json", "--output-path=stdout", "--disable-dev-shm-usage")
+		"--output=json", "--output-path=stdout", "--disable-dev-shm-usage",
+		"--only-categories=best-practices,performance,seo")
 	lhCommand = append(lhCommand, options...)
 
 	cmd := exec.Command(lhCommand[0], lhCommand[1:]...)

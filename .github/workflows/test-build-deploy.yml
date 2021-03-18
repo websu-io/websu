@@ -12,7 +12,7 @@ jobs:
     - uses: actions/setup-go@v2
     - name: go test ./...
       run: |
-          sudo npm install -g lighthouse@7.2.0
+          sudo npm install -g lighthouse@6.4.1
           ./run-tests.sh unit
     - name: integration tests
       run: |
@@ -59,7 +59,9 @@ jobs:
         file: ./build/Dockerfile_lighthouse-server
         platforms: linux/amd64
         push: true
-        tags: samos123/lighthouse-server:latest
+        tags: |
+          samos123/lighthouse-server:latest
+          us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/lighthouse-server:latest
     - name: Build and push lighthouse
       uses: docker/build-push-action@v2
       with:
