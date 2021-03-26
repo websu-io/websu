@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -17,6 +18,27 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Error dropping test database %v: %v", DatabaseName, err)
 	}
 	os.Exit(code)
+}
+
+func TestValidateReportInvalidURL(t *testing.T) {
+	r := ReportRequest{}
+	r.URL = "https://notarealhost"
+	err := r.Validate()
+	if err == nil {
+		t.Error("The URL is supposed to return an error")
+	}
+}
+
+func TestValidateReport404Error(t *testing.T) {
+	r := ReportRequest{}
+	r.URL = "https://samos-it.com/thispagedoesnotexist"
+	err := r.Validate()
+	if !strings.Contains(err.Error(), "status code") {
+		t.Error("Expected error that contained string status code")
+	}
+	if err == nil {
+		t.Error("The URL is supposed to return an error")
+	}
 }
 
 func TestGetReports(t *testing.T) {

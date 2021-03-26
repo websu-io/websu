@@ -12,8 +12,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"net/http"
 	neturl "net/url"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -54,6 +56,19 @@ func validateURL(value interface{}) error {
 	}
 	if u.Host == "flashnews.com" {
 		return errors.New("Sorry, your website is banned. Please file a GitHub issue if you believe this is unjustified.")
+	}
+	client := http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Get(s)
+	if err != nil {
+		return err
+	}
+	if !strings.Contains(resp.Header.Get("Content-Type"), "text/html") {
+		return fmt.Errorf("Only URLs that return HTML are allowed. URL responded with "+
+			"Content-Type %s, please set Content-Type to text/html.", resp.Header.Get("Content-Type"))
+	}
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("The URL %s returned a status code %v, which looks like an error."+
+			"Did you put in the right URL?", s, resp.StatusCode)
 	}
 	return nil
 }
