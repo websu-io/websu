@@ -233,7 +233,7 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		reportRequest.ThroughputKbps = 1000
 	}
 	lhOptions := []string{
-		fmt.Sprintf("--form-factor=%v", reportRequest.FormFactor),
+		fmt.Sprintf("--emulated-form-factor=%v", reportRequest.FormFactor),
 		fmt.Sprintf("--throttling.throughputKbps=%v", reportRequest.ThroughputKbps),
 		"--throttling.rttMs=0",
 		"--throttling.cpuSlowdownMultiplier=1",
