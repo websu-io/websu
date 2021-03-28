@@ -74,6 +74,20 @@ func createReport(t *testing.T, body []byte, mockLighthouseServer bool) *httptes
 	return resp
 }
 
+func TestGetReport400(t *testing.T) {
+	deleteAllReports()
+	req, _ := http.NewRequest("GET", "/reports/5929fa9a", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusBadRequest, response)
+}
+
+func TestGetReport404(t *testing.T) {
+	deleteAllReports()
+	req, _ := http.NewRequest("GET", "/reports/605ff34cfd4e805cb736f315", nil)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusNotFound, response)
+}
+
 func TestGetReportsEmpty(t *testing.T) {
 	deleteAllReports()
 	req, _ := http.NewRequest("GET", "/reports", nil)

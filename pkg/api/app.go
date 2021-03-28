@@ -20,6 +20,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -287,7 +288,11 @@ func (a *App) getReport(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	report, err := GetReportByObjectIDHex(params["id"])
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if strings.Contains(err.Error(), "no documents in result") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+		} else {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+		}
 		return
 	}
 	json.NewEncoder(w).Encode(&report)
