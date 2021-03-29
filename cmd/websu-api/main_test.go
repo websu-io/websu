@@ -162,6 +162,52 @@ func TestCreateReport(t *testing.T) {
 	deleteAllReports()
 }
 
+func TestCreateReportNoFullResult(t *testing.T) {
+	body := []byte(`{"URL": "https://www.google.com"}`)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLightHouseClient := mocks.NewMockLighthouseServiceClient(ctrl)
+	api.LighthouseClient = mockLightHouseClient
+	report := bytes.NewBuffer(body)
+	req, _ := http.NewRequest("POST", "/reports?fullResult=false", report)
+	mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
+		&lighthouse.LighthouseResult{Stdout: []byte("{'test': 'true'}")}, nil,
+	)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response)
+	var responseReport api.Report
+	if err := json.NewDecoder(response.Body).Decode(&responseReport); err != nil {
+		t.Error(err.Error())
+	}
+	if responseReport.RawJSON != "" {
+		t.Error("Expected the rawJSON to be empty due to fullReport=false")
+	}
+	deleteAllReports()
+}
+
+func TestCreateReportFullResult(t *testing.T) {
+	body := []byte(`{"URL": "https://www.google.com"}`)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockLightHouseClient := mocks.NewMockLighthouseServiceClient(ctrl)
+	api.LighthouseClient = mockLightHouseClient
+	report := bytes.NewBuffer(body)
+	req, _ := http.NewRequest("POST", "/reports?fullResult=true", report)
+	mockLightHouseClient.EXPECT().Run(gomock.Any(), gomock.Any()).Return(
+		&lighthouse.LighthouseResult{Stdout: []byte("{'test': 'true'}")}, nil,
+	)
+	response := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, response)
+	var responseReport api.Report
+	if err := json.NewDecoder(response.Body).Decode(&responseReport); err != nil {
+		t.Error(err.Error())
+	}
+	if responseReport.RawJSON != "{'test': 'true'}" {
+		t.Error("Expected the rawJSON to be present due to fullReport=true")
+	}
+	deleteAllReports()
+}
+
 func TestCreateReportRateLimit(t *testing.T) {
 	body := []byte(`{"URL": "https://www.google.com"}`)
 	var mock bool

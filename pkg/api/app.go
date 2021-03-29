@@ -209,6 +209,14 @@ func (a *App) getReportsCount(w http.ResponseWriter, r *http.Request) {
 // @Router /reports [post]
 func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	query := r.URL.Query()
+	fullResult := true
+	q := query.Get("fullResult")
+	if len(q) > 0 {
+		if b, err := strconv.ParseBool(q); err == nil {
+			fullResult = b
+		}
+	}
 	var reportRequest ReportRequest
 	if err := decodeJSONBody(w, r, &reportRequest); err != nil {
 		var mr *malformedRequest
@@ -279,6 +287,9 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		log.WithError(err).Error("unable to insert report")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+	if !fullResult {
+		report.RawJSON = ""
 	}
 	json.NewEncoder(w).Encode(&report)
 }
