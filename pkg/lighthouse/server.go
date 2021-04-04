@@ -34,7 +34,8 @@ func runLighthouse(url string, useDocker bool, options []string, chromeflags []s
 	lhCommand = append(lhCommand, "lighthouse", url,
 		fmt.Sprintf("--chrome-flags=\"%s\"", strings.Join(chromeflags, " ")),
 		"--output=json", "--output-path=stdout", "--disable-dev-shm-usage",
-		"--only-categories=best-practices,performance,seo")
+		"--only-categories=best-practices,performance,seo",
+		"--skip-audits=final-screenshot,screenshot-thumbnails,apple-touch-icon")
 	lhCommand = append(lhCommand, options...)
 
 	cmd := exec.Command(lhCommand[0], lhCommand[1:]...)
