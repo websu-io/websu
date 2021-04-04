@@ -26,3 +26,9 @@ gcloud run deploy {name} \
     )
     result = subprocess.run(cmd, capture_output=True, shell=True, check=True)
     print(result)
+    cmd = "gcloud run services update-traffic {name} --project {project_id} \
+            --to-latest --platform managed --region {region}".format(
+        project_id=args.project_id, **region
+    )
+    result = subprocess.run(cmd, capture_output=True, shell=True, check=True)
+    print(result)
