@@ -46,6 +46,8 @@ type ReportRequest struct {
 	ThroughputKbps int64 `json:"throughput_kbps" bson:"thoughput_kbps" example:"50000"`
 	// Optional parameter, default location will be used if not set
 	Location string `json:"location" bson:"location" example:"australia-southeast1"`
+	// Optional parameter, email adress to sent the report to
+	Email string `json:"email" bson:"_"`
 }
 
 func validateURL(value interface{}) error {
@@ -91,6 +93,7 @@ func (r ReportRequest) Validate() error {
 		validation.Field(&r.FormFactor, validation.In("desktop", "mobile")),
 		validation.Field(&r.ThroughputKbps, validation.Min(1000), validation.Max(500000)),
 		validation.Field(&r.Location, validation.By(checkLocation)),
+		validation.Field(&r.Email, is.Email),
 	)
 }
 

@@ -288,6 +288,9 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if err = report.SendEmail(); err != nil {
+		log.WithError(err).WithField("report", report.ID).Error("Error sending email")
+	}
 	if !fullResult {
 		report.RawJSON = ""
 	}

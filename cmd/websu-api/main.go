@@ -22,6 +22,11 @@ var (
 	gcpTaskQueue           = ""
 	serveFrontend          = true
 	auth                   = ""
+	smtpHost               = ""
+	smtpPort               = 465
+	smtpUsername           = ""
+	smtpPassword           = ""
+	fromEmail              = "info@websu.io"
 )
 
 // @title Websu API
@@ -68,6 +73,16 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 	flag.StringVar(&auth, "auth",
 		cmd.GetenvString("AUTH", auth),
 		"The authentication method to be used. This setting is optional and by default no authentication is done. Possible values: '' or 'firebase'.")
+	flag.StringVar(&smtpHost, "smtp-host", cmd.GetenvString("SMTP_HOST", smtpHost),
+		"SMTP host used for sending email. This setting is optional.")
+	flag.IntVar(&smtpPort, "smtp-port", cmd.GetenvInt("SMTP_PORT", smtpPort),
+		"SMTP port used for sending email. This setting is optional.")
+	flag.StringVar(&smtpUsername, "smtp-username", cmd.GetenvString("SMTP_USERNAME", smtpUsername),
+		"SMTP username used for sending email. This setting is optional.")
+	flag.StringVar(&smtpPassword, "smtp-password", cmd.GetenvString("SMTP_PASSWORD", smtpPassword),
+		"SMTP password used for sending email. This setting is optional.")
+	flag.StringVar(&fromEmail, "from-email", cmd.GetenvString("FROM_EMAIL", fromEmail),
+		"The email address of sender when sending email. This setting is optional.")
 	flag.Parse()
 
 	docs.SwaggerInfo.Host = apiHost
@@ -100,6 +115,12 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 		api.GCPRegion = gcpRegion
 		api.GCPTaskQueue = gcpTaskQueue
 	}
+
+	api.SmtpHost = smtpHost
+	api.SmtpPort = smtpPort
+	api.SmtpUsername = smtpUsername
+	api.SmtpPassword = smtpPassword
+	api.FromEmail = fromEmail
 
 	a.Run(listenAddress)
 }

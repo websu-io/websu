@@ -29,6 +29,16 @@ func TestValidateReportInvalidURL(t *testing.T) {
 	}
 }
 
+func TestValidateReportInvalidEmail(t *testing.T) {
+	r := ReportRequest{}
+	r.URL = "https://www.google.com"
+	r.Email = "notavalidemail"
+	err := r.Validate()
+	if err == nil {
+		t.Error("The invalid email is supposed to return an error")
+	}
+}
+
 func TestValidateReport404Error(t *testing.T) {
 	r := ReportRequest{}
 	r.URL = "https://samos-it.com/thispagedoesnotexist"
