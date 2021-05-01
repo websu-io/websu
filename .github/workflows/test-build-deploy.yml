@@ -61,7 +61,6 @@ jobs:
         push: true
         tags: |
           samos123/lighthouse-server:latest
-          us-central1-docker.pkg.dev/${{ secrets.PROJECT_ID }}/websu/lighthouse-server:latest
     - name: Build and push lighthouse
       uses: docker/build-push-action@v2
       with:
@@ -85,4 +84,3 @@ jobs:
         service: websu-api
         region: us-central1
         credentials: ${{ secrets.CLOUDRUN_SA }}
-
