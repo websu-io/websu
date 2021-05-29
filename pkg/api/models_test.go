@@ -216,3 +216,27 @@ func TestScheduledReports(t *testing.T) {
 		t.Errorf("Expected len(reports) == 3, got len(reports) = %v", len(reports))
 	}
 }
+
+func TestLocations(t *testing.T) {
+	l := NewLocation()
+	l.Name = "local"
+	l.DisplayName = "Local"
+	l.Address = "lighthouse-server:50051"
+	l.Order = 5
+	l.Insert()
+
+	lGet, err := GetLocationByName(l.Name)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if l.Name != lGet.Name {
+		t.Errorf("Expected lGet.Name and l.Name to be equal. l.Name was %s and lGet.Name was %s", l.Name, lGet.Name)
+	}
+
+	rr := &ReportRequest{Location: l.Name}
+	r := NewReportFromRequest(rr)
+	if r.LocationDisplay != l.DisplayName {
+		t.Errorf("Expected r.LocationDisplay and l.DisplayName to be equal. r.LocationDisplay was %s and l.DisplayName was %s",
+			r.LocationDisplay, l.DisplayName)
+	}
+}

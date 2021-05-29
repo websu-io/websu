@@ -113,9 +113,10 @@ func (s ScheduledReport) Validate() error {
 }
 
 type Report struct {
-	ID            primitive.ObjectID `json:"id" bson:"_id"`
-	User          string             `json:"user"`
-	ReportRequest `bson:",inline"`
+	ID              primitive.ObjectID `json:"id" bson:"_id"`
+	User            string             `json:"user"`
+	ReportRequest   `bson:",inline"`
+	LocationDisplay string `json:"location_display" bson:"location_display"`
 	// RawJSON contains the lighthouse JSON result
 	RawJSON          string                 `json:"raw_json" bson:"raw_json"`
 	CreatedAt        time.Time              `json:"created_at" bson:"created_at"`
@@ -218,6 +219,14 @@ func NewReport() *Report {
 func NewReportFromRequest(rr *ReportRequest) *Report {
 	r := NewReport()
 	copier.Copy(&r, rr)
+	if r.Location != "" {
+		l, err := GetLocationByName(r.Location)
+		if err != nil {
+			log.WithError(err).Error("Error getting location by name to set report.LocationDisplay")
+		} else {
+			r.LocationDisplay = l.DisplayName
+		}
+	}
 	return r
 }
 
@@ -321,6 +330,15 @@ func GetLocationByObjectIDHex(hex string) (Location, error) {
 	}
 	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&location)
 	if err != nil {
+		return location, err
+	}
+	return location, nil
+}
+
+func GetLocationByName(name string) (Location, error) {
+	var location Location
+	collection := DB.Database(DatabaseName).Collection("locations")
+	if err := collection.FindOne(context.Background(), bson.M{"name": name}).Decode(&location); err != nil {
 		return location, err
 	}
 	return location, nil
