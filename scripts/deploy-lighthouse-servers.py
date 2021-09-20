@@ -91,5 +91,7 @@ if args.action == "update-frontend":
         if region['name'] not in current_locations:
             body = dict(region)
             body['address'] = cloudrun_locations[region['cloudrun_name']]['url']
+            body['address'] = body['address'][8:] # strip https://
+            body['address'] = body['address'] + ':443'
             del body['cloudrun_name']
             requests.post("https://api.websu.io/locations", json=body)
