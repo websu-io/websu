@@ -240,3 +240,38 @@ func TestLocations(t *testing.T) {
 			r.LocationDisplay, l.DisplayName)
 	}
 }
+
+func TestLocationUpsertInvalidHex(t *testing.T) {
+	_, err := NewLocationWithID("notvalidhex")
+	if err == nil {
+		t.Error("Error expected due to invalid hex")
+	}
+}
+
+func TestLocationUpsert(t *testing.T) {
+	l := NewLocation()
+	l.Name = "local2"
+	l.DisplayName = "Local"
+	l.Address = "lighthouse-server:50051"
+	l.Order = 5
+	err := l.Upsert()
+	if err != nil {
+		t.Error(err.Error())
+	}
+
+	l.Order = 6
+	l.Premium = true
+	l.Upsert()
+
+	lGet, err := GetLocationByName(l.Name)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if lGet.Order != l.Order {
+		t.Error("Order wasn't updated")
+	}
+	if lGet.Premium != l.Premium {
+		t.Error("Premium wasn't updated")
+	}
+
+}

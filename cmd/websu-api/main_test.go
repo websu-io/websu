@@ -5,10 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/websu-io/websu/pkg/api"
-	"github.com/websu-io/websu/pkg/lighthouse"
-	"github.com/websu-io/websu/pkg/mocks"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -16,6 +12,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/golang/mock/gomock"
+	"github.com/websu-io/websu/pkg/api"
+	"github.com/websu-io/websu/pkg/lighthouse"
+	"github.com/websu-io/websu/pkg/mocks"
 )
 
 var a *api.App
@@ -431,6 +432,48 @@ func TestCreateLocationsDuplicateName(t *testing.T) {
 	req, _ = http.NewRequest("POST", "/locations", location)
 	resp = executeRequest(req)
 	checkResponseCode(t, http.StatusInternalServerError, resp)
+}
+
+func TestPutLocation(t *testing.T) {
+	body := []byte(`{
+		"address": "localhost:50051",
+		"secure": false,
+		"name": "local10",
+		"display_name": "Local",
+		"order": 1
+	}`)
+	location := bytes.NewBuffer(body)
+	req, _ := http.NewRequest("PUT", "/locations/507f1f77bcf86cd799439011", location)
+	resp := executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if body := resp.Body.String(); strings.Contains(body, "localhost:50051") != true {
+		t.Errorf("Expected body to contain localhost:50051. Got %s", body)
+	}
+
+	locations, _ := api.GetAllLocations()
+	currently := len(locations)
+
+	body = []byte(`{
+		"address": "localhost:50055",
+		"secure": false,
+		"name": "local10",
+		"display_name": "Local10",
+		"order": 1,
+		"premium": true
+	}`)
+	location = bytes.NewBuffer(body)
+	req, _ = http.NewRequest("PUT", "/locations/507f1f77bcf86cd799439011", location)
+	resp = executeRequest(req)
+	checkResponseCode(t, http.StatusOK, resp)
+	if body := resp.Body.String(); strings.Contains(body, "localhost:50055") != true {
+		t.Errorf("Expected body to contain localhost:50055. Got %s", body)
+	}
+
+	locations, _ = api.GetAllLocations()
+	afterUpdate := len(locations)
+	if currently != afterUpdate {
+		t.Error("No new locations should have been added after the update")
+	}
 }
 
 func TestGetScheduledReportsEmpty(t *testing.T) {

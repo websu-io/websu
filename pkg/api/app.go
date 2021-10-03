@@ -6,22 +6,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	libredis "github.com/go-redis/redis/v8"
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	log "github.com/sirupsen/logrus"
-	"github.com/swaggo/http-swagger"
-	mhttp "github.com/ulule/limiter/v3/drivers/middleware/stdlib"
-	pb "github.com/websu-io/websu/pkg/lighthouse"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"net/http"
 	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
+
+	libredis "github.com/go-redis/redis/v8"
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
+	httpSwagger "github.com/swaggo/http-swagger"
+	mhttp "github.com/ulule/limiter/v3/drivers/middleware/stdlib"
+	pb "github.com/websu-io/websu/pkg/lighthouse"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
@@ -116,6 +117,7 @@ func (a *App) SetupRoutes() {
 	a.Router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
 	a.Router.HandleFunc("/locations", a.getLocations).Methods("GET")
 	a.Router.HandleFunc("/locations", a.createLocation).Methods("POST")
+	a.Router.HandleFunc("/locations/{id}", a.updateLocation).Methods("PUT")
 	a.Router.HandleFunc("/locations/{id}", a.deleteLocation).Methods("DELETE")
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	a.Router.PathPrefix("/").Handler(spa)
@@ -353,6 +355,33 @@ func (a *App) createLocation(w http.ResponseWriter, r *http.Request) {
 	log.Infof("Decoded json from HTTP body. Location: %+v", location)
 	if err := location.Insert(); err != nil {
 		log.WithError(err).Error("Error creating location")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	ConnectLHLocations()
+	json.NewEncoder(w).Encode(&location)
+}
+func (a *App) updateLocation(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	location, err := NewLocationWithID(params["id"])
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := decodeJSONBody(w, r, &location); err != nil {
+		var mr *malformedRequest
+		if errors.As(err, &mr) {
+			http.Error(w, mr.msg, mr.status)
+		} else {
+			log.WithError(err).Error("Error decoding location json")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+	log.Infof("Decoded json from HTTP body. Location: %+v", location)
+	if err := location.Upsert(); err != nil {
+		log.WithError(err).Error("Error updating location")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

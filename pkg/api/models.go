@@ -4,7 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-ozzo/ozzo-validation/v4"
+	"net/http"
+	neturl "net/url"
+	"reflect"
+	"strings"
+	"time"
+
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
 	"github.com/jinzhu/copier"
 	log "github.com/sirupsen/logrus"
@@ -12,11 +18,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"net/http"
-	neturl "net/url"
-	"reflect"
-	"strings"
-	"time"
 )
 
 var (
@@ -143,6 +144,7 @@ type Location struct {
 	// Flag to indicate whether TLS should be used
 	Secure    bool      `json:"secure" bson:"secure"`
 	Order     int32     `json:"order" bson:"order"`
+	Premium   bool      `json:"premium" bson:"premium"`
 	CreatedAt time.Time `json:"created_at" bson:"created_at"`
 }
 
@@ -276,6 +278,27 @@ func NewLocation() *Location {
 	l.ID = primitive.NewObjectID()
 	l.CreatedAt = time.Now()
 	return l
+}
+
+func NewLocationWithID(id string) (*Location, error) {
+	l := new(Location)
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return l, err
+	}
+	l.ID = oid
+	return l, nil
+}
+
+func (location *Location) Upsert() error {
+	opts := options.Replace().SetUpsert(true)
+	filter := bson.D{{"_id", location.ID}}
+	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	collection := DB.Database(DatabaseName).Collection("locations")
+	if _, err := collection.ReplaceOne(ctx, filter, location, opts); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (location *Location) Insert() error {

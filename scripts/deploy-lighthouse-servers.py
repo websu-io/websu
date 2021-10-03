@@ -45,8 +45,8 @@ regions_premium = [
         {"cloudrun_name": "lighthouse-server-us-west4", "name": "us-west4", "display_name": "Salt Lake City, USA"},
 ]
 
-regions_standard = list(map(lambda x: dict(x, secure=True, order=60), regions_standard))
-regions_premium = list(map(lambda x: dict(x, secure=True, order=90), regions_premium))
+regions_standard = [dict(item, secure=True, premium=False) for item in regions_standard]
+regions_premium = [dict(item, secure=True, premium=True, order=90) for item in regions_premium]
 
 if args.action == "deploy":
     for region in (regions_standard + regions_premium):
@@ -74,6 +74,7 @@ if args.action == "deploy":
 #        "id": "5fe8e36f5b2ee6831d99e220",
 #        "name": "australia-southeast1",
 #        "order": 40,
+#        "premium": true,
 #        "secure": true
 #    }#
 
@@ -82,7 +83,6 @@ if args.action == "deploy":
 if args.action == "update-frontend":
     cmd = "gcloud run services list --platform managed --format=json | jq '[.[]|{name: .metadata.name, url: .status.url}]'"
     cloudrun_locations_jsonstr = subprocess.check_output(cmd, shell=True, text=True)
-    print(cloudrun_locations_jsonstr)
     cloudrun_locations = json.loads(cloudrun_locations_jsonstr)
     cloudrun_locations = {loc['name']: loc for loc in cloudrun_locations}
     locations_resp = requests.get("https://api.websu.io/locations").json()
@@ -95,3 +95,11 @@ if args.action == "update-frontend":
             body['address'] = body['address'] + ':443'
             del body['cloudrun_name']
             requests.post("https://api.websu.io/locations", json=body)
+        else:
+            # get original location retrieved from REST API
+            original = current_locations[region['name']]
+            # merge with the defined regions_standard and regions_premium dict
+            original.update(region)
+            # remove fields that are not part of REST API
+            del original['cloudrun_name']
+            requests.put("https://api.websu.io/locations/%s" % original["id"], json=original)
