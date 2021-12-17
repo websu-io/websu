@@ -97,6 +97,7 @@ local memory will be used instead of Redis. Example redis://localhost:6379/0`)
 		options = append(options, api.WithRedis(redisURL))
 	}
 	api.ApiUrl = apiUrl
+	api.EnableAdminAPIs = enableAdminAPIs
 	api.Auth = auth
 	if auth != "" && auth != "firebase" {
 		log.Fatalf("--auth is currently set to %s, which isn't a valid value. Please use '' or 'firebase'", auth)
