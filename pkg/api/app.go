@@ -27,6 +27,7 @@ import (
 
 var (
 	DefaultRateLimit  = "10-M"
+	EnableAdminAPIs   = false
 	LighthouseClient  pb.LighthouseServiceClient
 	LighthouseClients map[string]pb.LighthouseServiceClient
 	ApiUrl            string
@@ -108,17 +109,19 @@ func (a *App) SetupRoutes() {
 	a.Router.HandleFunc("/reports/count", a.getReportsCount).Methods("GET")
 	a.Router.Handle("/reports", limiter.Handler(http.HandlerFunc(a.createReport))).Methods("POST")
 	a.Router.HandleFunc("/reports/{id}", a.getReport).Methods("GET")
-	a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
 	a.Router.HandleFunc("/scheduled-reports", a.ScheduledReportsGet).Methods("GET")
 	a.Router.Handle("/scheduled-reports", limiter.Handler(http.HandlerFunc(a.ScheduledReportsPost))).Methods("POST")
 	a.Router.HandleFunc("/scheduled-reports/run", a.RunScheduledReports).Methods("GET")
 	a.Router.HandleFunc("/scheduled-reports/{id}", a.ScheduledReportGet).Methods("GET")
-	a.Router.HandleFunc("/scheduled-reports/{id}", a.ScheduledReportDelete).Methods("DELETE")
 	a.Router.PathPrefix("/docs/").Handler(httpSwagger.WrapHandler)
 	a.Router.HandleFunc("/locations", a.getLocations).Methods("GET")
-	a.Router.HandleFunc("/locations", a.createLocation).Methods("POST")
-	a.Router.HandleFunc("/locations/{id}", a.updateLocation).Methods("PUT")
-	a.Router.HandleFunc("/locations/{id}", a.deleteLocation).Methods("DELETE")
+	if EnableAdminAPIs == true {
+		a.Router.HandleFunc("/locations", a.createLocation).Methods("POST")
+		a.Router.HandleFunc("/locations/{id}", a.updateLocation).Methods("PUT")
+		a.Router.HandleFunc("/locations/{id}", a.deleteLocation).Methods("DELETE")
+		a.Router.HandleFunc("/reports/{id}", a.deleteReport).Methods("DELETE")
+		a.Router.HandleFunc("/scheduled-reports/{id}", a.ScheduledReportDelete).Methods("DELETE")
+	}
 	spa := spaHandler{staticPath: "static", indexPath: "index.html"}
 	a.Router.PathPrefix("/").Handler(spa)
 }

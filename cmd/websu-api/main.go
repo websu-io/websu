@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/websu-io/websu/docs"
 	"github.com/websu-io/websu/pkg/api"
@@ -15,6 +16,7 @@ var (
 	lighthouseServerSecure = false
 	apiHost                = "localhost:8000"
 	apiUrl                 = "http://localhost:8000"
+	enableAdminAPIs        = false
 	redisURL               = ""
 	scheduler              = "go"
 	gcpProject             = ""
@@ -54,6 +56,10 @@ func main() {
 	flag.BoolVar(&lighthouseServerSecure, "lighthouse-server-secure",
 		cmd.GetenvBool("LIGHTHOUSE_SERVER_SECURE", lighthouseServerSecure),
 		"Boolean flag to indicate whether TLS should be used to connect to lighthouse server. Default: false")
+	flag.BoolVar(&enableAdminAPIs, "enable-admin-apis",
+		cmd.GetenvBool("ENABLE_ADMIN_APIS", enableAdminAPIs),
+		"Boolean flag to indicate whether admin APIs should be enabled APIs like ability to add location are admin APIs. Default: false")
+
 	flag.StringVar(&redisURL, "redis-url",
 		cmd.GetenvString("REDIS_URL", redisURL),
 		`The Redis connection string to use. This setting is optional and by default

@@ -25,6 +25,7 @@ func TestMain(m *testing.M) {
 	a = api.NewApp()
 	api.CreateMongoClient("mongodb://localhost:27018")
 	api.DatabaseName = "websu-test"
+	api.EnableAdminAPIs = true
 	code := m.Run()
 	ctx := context.TODO()
 	if err := api.DB.Database(api.DatabaseName).Drop(ctx); err != nil {
