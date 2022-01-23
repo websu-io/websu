@@ -215,6 +215,51 @@ func TestScheduledReports(t *testing.T) {
 	if len(reports) != 3 {
 		t.Errorf("Expected len(reports) == 3, got len(reports) = %v", len(reports))
 	}
+
+	r = NewScheduledReport()
+	r.URL = "https://www.google.com"
+	r.Schedule = "minute"
+	r.LastRun = time.Now().Add(-58 * time.Second)
+	r.Insert()
+
+	all, err = GetAllScheduledReports()
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if len(all) != 7 {
+		t.Errorf("Expected len(all) == 7, got len(all) = %v", len(all))
+	}
+
+	reports, err = GetScheduleReportsDueToRun()
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if len(reports) != 3 {
+		t.Errorf("Expected len(reports) == 3, got len(reports) = %v", len(reports))
+	}
+
+	r = NewScheduledReport()
+	r.URL = "https://www.google.com"
+	r.Schedule = "minute"
+	r.LastRun = time.Now().Add(-60 * time.Second)
+	r.Insert()
+
+	all, err = GetAllScheduledReports()
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if len(all) != 8 {
+		t.Errorf("Expected len(all) == 8, got len(all) = %v", len(all))
+	}
+
+	reports, err = GetScheduleReportsDueToRun()
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if len(reports) != 4 {
+		t.Errorf("Expected len(reports) == 3, got len(reports) = %v", len(reports))
+	}
+
 }
 
 func TestLocations(t *testing.T) {

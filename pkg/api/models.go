@@ -109,7 +109,7 @@ type ScheduledReport struct {
 func (s ScheduledReport) Validate() error {
 	return validation.ValidateStruct(&s,
 		validation.Field(&s.ReportRequest),
-		validation.Field(&s.Schedule, validation.In("hourly", "daily", "weekly", "monthly")),
+		validation.Field(&s.Schedule, validation.In("minute", "hourly", "daily", "weekly", "monthly")),
 	)
 }
 
@@ -445,6 +445,9 @@ func GetScheduleReportsDueToRun() ([]ScheduledReport, error) {
 	c := context.TODO()
 	query := bson.M{
 		"$or": []bson.M{
+			bson.M{"schedule": "minute",
+				"last_run": bson.M{
+					"$lte": time.Now().Add(-1 * time.Minute)}},
 			bson.M{"schedule": "hourly",
 				"last_run": bson.M{
 					"$lte": time.Now().Add(-60 * time.Minute)}},
