@@ -164,7 +164,10 @@ func CreateMongoIndexes() {
 	log.WithField("name", locIndexName).Info("Created index for locations")
 
 	reportsIndex := mongo.IndexModel{
-		Keys:    bson.M{"created_at": -1},
+		Keys: bson.M{
+			"user":       1,
+			"created_at": -1,
+		},
 		Options: nil,
 	}
 	reports := DB.Database(DatabaseName).Collection("reports")
