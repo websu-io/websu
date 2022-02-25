@@ -8,6 +8,10 @@ services:
     - "LIGHTHOUSE_SERVER=lighthouse-server:50051"
     - "MONGO_URI=mongodb://mongo:27017"
     - "SERVE_FRONTEND=false"
+    - "AUTH=firebase"
+    - "GOOGLE_APPLICATION_CREDENTIALS=/firebase-sa.json"
+    volumes:
+      - ./firebase-sa.json:/firebase-sa.json
     links:
     - mongo
     - lighthouse-server
