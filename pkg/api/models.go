@@ -48,7 +48,7 @@ type ReportRequest struct {
 	// Optional parameter, default location will be used if not set
 	Location string `json:"location" bson:"location" example:"australia-southeast1"`
 	// Optional parameter, email adress to sent the report to
-	Email string `json:"email" bson:"_"`
+	Email string `json:"email" bson:"email"`
 }
 
 func validateURL(value interface{}) error {
@@ -183,7 +183,7 @@ func GetReports(limit int64, skip int64, query map[string]interface{}) ([]Report
 	collection := DB.Database(DatabaseName).Collection("reports")
 	c := context.TODO()
 	options := options.Find()
-	options.SetProjection(bson.M{"raw_json": 0, "audit_results": 0})
+	options.SetProjection(bson.M{"raw_json": 0, "audit_results": 0, "email": 0})
 	options.SetSort(bson.M{"created_at": -1})
 	options.SetLimit(limit)
 	options.SetSkip(skip)
@@ -266,10 +266,11 @@ func GetReportByObjectIDHex(hex string) (Report, error) {
 	var report Report
 	collection := DB.Database(DatabaseName).Collection("reports")
 	oid, err := primitive.ObjectIDFromHex(hex)
+	options := options.FindOne().SetProjection(bson.M{"email": 0})
 	if err != nil {
 		return report, err
 	}
-	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&report)
+	err = collection.FindOne(context.Background(), bson.M{"_id": oid}, options).Decode(&report)
 	if err != nil {
 		return report, err
 	}
