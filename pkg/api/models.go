@@ -419,7 +419,9 @@ func GetAllScheduledReports() ([]ScheduledReport, error) {
 	scheduledReports := []ScheduledReport{}
 	collection := DB.Database(DatabaseName).Collection("scheduled_reports")
 	c := context.TODO()
-	cursor, err := collection.Find(c, bson.D{})
+	options := options.Find()
+	options.SetProjection(bson.M{"email": 0})
+	cursor, err := collection.Find(c, bson.D{}, options)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +438,9 @@ func GetScheduledReportByObjectIDHex(hex string) (ScheduledReport, error) {
 	if err != nil {
 		return sr, err
 	}
-	err = collection.FindOne(context.Background(), bson.M{"_id": oid}).Decode(&sr)
+	options := options.FindOne()
+	options.SetProjection(bson.M{"email": 0})
+	err = collection.FindOne(context.Background(), bson.M{"_id": oid}, options).Decode(&sr)
 	if err != nil {
 		return sr, err
 	}
