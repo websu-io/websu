@@ -48,7 +48,8 @@ type ReportRequest struct {
 	// Optional parameter, default location will be used if not set
 	Location string `json:"location" bson:"location" example:"australia-southeast1"`
 	// Optional parameter, email adress to sent the report to
-	Email string `json:"email" bson:"email"`
+	Email string `json:"email,omitempty" bson:"email"`
+	User  string `json:"user,omitempty" bson:"user"`
 }
 
 func validateURL(value interface{}) error {
@@ -115,7 +116,6 @@ func (s ScheduledReport) Validate() error {
 
 type Report struct {
 	ID              primitive.ObjectID `json:"id" bson:"_id"`
-	User            string             `json:"user"`
 	ReportRequest   `bson:",inline"`
 	LocationDisplay string `json:"location_display" bson:"location_display"`
 	// RawJSON contains the lighthouse JSON result
@@ -183,7 +183,7 @@ func GetReports(limit int64, skip int64, query map[string]interface{}) ([]Report
 	collection := DB.Database(DatabaseName).Collection("reports")
 	c := context.TODO()
 	options := options.Find()
-	options.SetProjection(bson.M{"raw_json": 0, "audit_results": 0, "email": 0})
+	options.SetProjection(bson.M{"raw_json": 0, "audit_results": 0, "email": 0, "user": 0})
 	options.SetSort(bson.M{"created_at": -1})
 	options.SetLimit(limit)
 	options.SetSkip(skip)
@@ -266,7 +266,7 @@ func GetReportByObjectIDHex(hex string) (Report, error) {
 	var report Report
 	collection := DB.Database(DatabaseName).Collection("reports")
 	oid, err := primitive.ObjectIDFromHex(hex)
-	options := options.FindOne().SetProjection(bson.M{"email": 0})
+	options := options.FindOne().SetProjection(bson.M{"email": 0, "user": 0})
 	if err != nil {
 		return report, err
 	}
@@ -420,7 +420,7 @@ func GetAllScheduledReports() ([]ScheduledReport, error) {
 	collection := DB.Database(DatabaseName).Collection("scheduled_reports")
 	c := context.TODO()
 	options := options.Find()
-	options.SetProjection(bson.M{"email": 0})
+	options.SetProjection(bson.M{"email": 0, "user": 0})
 	cursor, err := collection.Find(c, bson.D{}, options)
 	if err != nil {
 		return nil, err
@@ -439,7 +439,7 @@ func GetScheduledReportByObjectIDHex(hex string) (ScheduledReport, error) {
 		return sr, err
 	}
 	options := options.FindOne()
-	options.SetProjection(bson.M{"email": 0})
+	options.SetProjection(bson.M{"email": 0, "user": 0})
 	err = collection.FindOne(context.Background(), bson.M{"_id": oid}, options).Decode(&sr)
 	if err != nil {
 		return sr, err

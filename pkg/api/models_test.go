@@ -52,6 +52,7 @@ func TestValidateReport404Error(t *testing.T) {
 }
 
 func TestGetReports(t *testing.T) {
+
 	r := NewReport()
 	r.URL = "https://www.sam.com"
 	r.User = "sam"
@@ -73,8 +74,8 @@ func TestGetReports(t *testing.T) {
 	if len(reports) != 1 {
 		t.Errorf("len(reports) should be 1, but got %v", len(reports))
 	}
-	if reports[0].User != "sam" {
-		t.Errorf("Expected report.User to be set to sam, but got %v", reports[0].User)
+	if reports[0].User != "" {
+		t.Errorf("Expected report.User to be set to '', but got %v", reports[0].User)
 	}
 
 	reports, err = GetReports(10, 0, nil)

@@ -3,10 +3,11 @@ package api
 import (
 	"context"
 	"errors"
-	firebase "firebase.google.com/go/v4"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
+
+	firebase "firebase.google.com/go/v4"
+	log "github.com/sirupsen/logrus"
 )
 
 var FirebaseApp *firebase.App

@@ -442,6 +442,17 @@ func (a *App) ScheduledReportsPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user := r.Context().Value("UserID"); user != nil {
+		sr.User = user.(string)
+	} else {
+		if Auth == "firebase" {
+			http.Error(w, "Only logged in users can create a ScheduledReport", http.StatusForbidden)
+			return
+		} else {
+			log.Info("User isn't authenticated")
+		}
+	}
+
 	if err := sr.Insert(); err != nil {
 		log.WithError(err).WithField("sr", sr).Error("Error creating ScheduledReport")
 		http.Error(w, err.Error(), http.StatusInternalServerError)

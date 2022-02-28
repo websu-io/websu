@@ -3,10 +3,11 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/go-co-op/gocron"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/go-co-op/gocron"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -58,7 +59,7 @@ type GoScheduler struct{}
 
 func (gs *GoScheduler) Start() {
 	s := gocron.NewScheduler(time.UTC)
-	s.Every(10).Minutes().Do(RunScheduledReports, gs)
+	s.Every(1).Minutes().Do(RunScheduledReports, gs)
 	s.StartAsync()
 }
 
