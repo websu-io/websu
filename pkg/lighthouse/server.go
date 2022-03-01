@@ -29,13 +29,37 @@ func runLighthouse(url string, useDocker bool, options []string, chromeflags []s
 	if useDocker {
 		lhCommand = append(lhCommand, "docker", "run", "samos123/lighthouse:9.4.0")
 	}
-	defaultChromeflags := []string{"--no-sandbox", "--headless"}
+	defaultChromeflags := []string{"--no-sandbox", "--headless", "--disable-dev-shm-usage"}
 	chromeflags = append(defaultChromeflags, chromeflags...)
 	lhCommand = append(lhCommand, "lighthouse", url,
 		fmt.Sprintf("--chrome-flags=\"%s\"", strings.Join(chromeflags, " ")),
 		"--output=json", "--output-path=stdout", "--disable-dev-shm-usage",
-		"--only-categories=best-practices,performance,seo",
-		"--skip-audits=final-screenshot,screenshot-thumbnails,apple-touch-icon")
+		"--only-categories=best-practices,performance,seo,accessibility",
+		"--skip-audits=final-screenshot,apple-touch-icon")
+
+	// Update deprecated options that were in lighthouse 6.4
+	for i, option := range options {
+		if strings.HasPrefix(option, "--emulated-form-factor") {
+			formFactor := strings.Split(option, "=")[1]
+			options[i] = "--form-factor=" + formFactor
+			if formFactor == "desktop" {
+				options = append(options, "--screenEmulation.mobile=false")
+				options = append(options, "--screenEmulation.height=940")
+				options = append(options, "--screenEmulation.width=1350")
+				options = append(options, "--screenEmulation.deviceScaleFactor=1")
+				options = append(options, "--emulatedUserAgent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4695.0 Safari/537.36 Chrome-Lighthouse")
+			}
+			if formFactor == "mobile" {
+				options = append(options, "--screenEmulation.mobile=true")
+				options = append(options, "--screenEmulation.height=640")
+				options = append(options, "--screenEmulation.width=360")
+				options = append(options, "--screenEmulation.deviceScaleFactor=2.625")
+				options = append(options, "--emulatedUserAgent=Mozilla/5.0 (Linux; Android 7.0; Moto G (4)) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/98.0.4695.0 Mobile Safari/537.36 Chrome-Lighthouse")
+			}
+
+			break
+		}
+	}
 	lhCommand = append(lhCommand, options...)
 
 	cmd := exec.Command(lhCommand[0], lhCommand[1:]...)

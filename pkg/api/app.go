@@ -267,7 +267,7 @@ func (a *App) createReport(w http.ResponseWriter, r *http.Request) {
 		lhClient = LighthouseClient
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*45)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
 	defer cancel()
 	lhResult, err := lhClient.Run(ctx, &lhRequest)
 	if err != nil {
