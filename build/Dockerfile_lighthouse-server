@@ -11,7 +11,7 @@ FROM alpine:3.13
 ENV USE_DOCKER=false
 WORKDIR /opt/lighthouse
 
-ARG LH_VERSION="6.4.1"
+ARG LH_VERSION="9.4.0"
 RUN apk --update-cache --no-cache \
      add npm chromium \
     && npm -g install lighthouse@$LH_VERSION
