@@ -56,7 +56,8 @@ if args.action == "deploy":
     gcloud run deploy {cloudrun_name} \
       --image us-central1-docker.pkg.dev/{project_id}/websu/lighthouse-server:{lh_version} \
       --memory 1024Mi --platform managed --port 50051 --timeout 120s --concurrency 1 --max-instances=20 \
-      --region {name} --set-env-vars="USE_DOCKER=false" --allow-unauthenticated""".format(
+      --region {name} --set-env-vars="USE_DOCKER=false" --allow-unauthenticated \
+      --execution-environment=gen2""".format(
             project_id=args.project_id, lh_version=lh_version, **region
         )
         print("Going to run:\n", cmd)

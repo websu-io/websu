@@ -34,8 +34,8 @@ func runLighthouse(url string, useDocker bool, options []string, chromeflags []s
 	lhCommand = append(lhCommand, "lighthouse", url,
 		fmt.Sprintf("--chrome-flags=\"%s\"", strings.Join(chromeflags, " ")),
 		"--output=json", "--output-path=stdout", "--disable-dev-shm-usage",
-		"--only-categories=best-practices,performance,seo,accessibility",
-		"--skip-audits=final-screenshot,apple-touch-icon")
+		"--only-categories=best-practices,performance,seo",
+		"--skip-audits=final-screenshot,screenshot-thumbnails,apple-touch-icon")
 
 	// Update deprecated options that were in lighthouse 6.4
 	for i, option := range options {
