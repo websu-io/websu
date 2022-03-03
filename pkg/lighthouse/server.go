@@ -29,7 +29,13 @@ func runLighthouse(url string, useDocker bool, options []string, chromeflags []s
 	if useDocker {
 		lhCommand = append(lhCommand, "docker", "run", "samos123/lighthouse:9.4.0")
 	}
-	defaultChromeflags := []string{"--no-sandbox", "--headless", "--disable-dev-shm-usage"}
+	defaultChromeflags := []string{"--no-sandbox", "--headless", "--disable-dev-shm-usage",
+		"--hide-scrollbars", "--disable-features=TranslateUI", "--disable-extensions",
+		"--disable-component-extensions-with-background-pages", "--disable-background-networking", "--disable-sync",
+		"--metrics-recording-only", "--disable-default-apps", "--mute-audio", "--no-default-browser-check",
+		"--no-first-run", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding",
+		"--disable-background-timer-throttling", "--force-fieldtrials=*BackgroundTracing/default/",
+		"--use-gl=swiftshader", "--disable-software-rasterizer"}
 	chromeflags = append(defaultChromeflags, chromeflags...)
 	lhCommand = append(lhCommand, "lighthouse", url,
 		fmt.Sprintf("--chrome-flags=\"%s\"", strings.Join(chromeflags, " ")),
