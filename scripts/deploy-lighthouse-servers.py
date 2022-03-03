@@ -9,9 +9,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("action", help="the action to take. Possible values: deploy, update-frontend.",
         choices=["deploy", "update-frontend"])
 parser.add_argument('--project-id', dest="project_id", help='The GCP project ID', required=True)
-parser.add_argument('--lighthouse-version', dest="lh_version", help='The lighthouse version to use. E.g. 9.4.0', required=True)
+parser.add_argument('--image', dest="image", help='Location of docker image to use', required=True)
 args = parser.parse_args()
-lh_version = args.lh_version
+image = args.image
 
 regions_standard = [
         {"cloudrun_name": "lighthouse-server", "name": "us-central1", "display_name": "Iowa, US"},
@@ -53,12 +53,12 @@ regions_premium = [dict(item, secure=True, premium=True, order=90) for item in r
 if args.action == "deploy":
     for region in (regions_standard + regions_premium):
         cmd = """
-    gcloud run deploy {cloudrun_name} \
-      --image us-central1-docker.pkg.dev/{project_id}/websu/lighthouse-server:{lh_version} \
+    gcloud beta run deploy {cloudrun_name} \
+      --image {image} \
       --memory 1024Mi --platform managed --port 50051 --timeout 120s --concurrency 1 --max-instances=20 \
       --region {name} --set-env-vars="USE_DOCKER=false" --allow-unauthenticated \
       --execution-environment=gen2""".format(
-            project_id=args.project_id, lh_version=lh_version, **region
+            project_id=args.project_id, image=image, **region
         )
         print("Going to run:\n", cmd)
         result = subprocess.run(cmd, capture_output=True, shell=True, check=True)
