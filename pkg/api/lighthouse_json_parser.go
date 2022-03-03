@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
@@ -14,7 +15,6 @@ var keys = []string{
 	"total-blocking-time",
 	"cumulative-layout-shift",
 	"first-meaningful-paint",
-	"estimated-input-latency",
 	"server-response-time",
 }
 
